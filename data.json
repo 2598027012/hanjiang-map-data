@@ -702,5 +702,8 @@
       "warn": "严禁下水游泳、戏水、垂钓，请勿靠近岸边湿滑区域"
     }
   ],
-  "levels": []
+  "levels": [],
+  "admin": {
+    "passHash": "6bf9cc4b5d825b798b8ba9a5b52eed30a4c39bfb3f34a49f00f6ca7a531fbbd4"
+  }
 }
