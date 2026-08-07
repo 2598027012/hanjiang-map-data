@@ -721,6 +721,25 @@
       "color": "#dc2626"
     }
   ],
+  "stations": [
+    {
+      "name": "蓝天救援队",
+      "lon": 111.660957,
+      "lat": 32.376996,
+      "color": "#2563EB",
+      "icon": "救",
+      "contact": "陈森",
+      "phone": "13995780307"
+    },
+    {
+      "name": "水上急救站",
+      "lon": 111.660962,
+      "lat": 32.377628,
+      "color": "#E11D48",
+      "icon": "✚",
+      "simple": true
+    }
+  ],
   "admin": {
     "passHash": "6bf9cc4b5d825b798b8ba9a5b52eed30a4c39bfb3f34a49f00f6ca7a531fbbd4"
   }
