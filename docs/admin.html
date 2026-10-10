@@ -1,0 +1,1214 @@
+<!DOCTYPE html><html lang="zh-CN"><head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>点位后台管理 · 汉江老河口段防溺水警示图</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%231E293B'/%3E%3Ctext x='32' y='45' font-size='38' text-anchor='middle' fill='white' font-family='sans-serif' font-weight='bold'%3E管%3C/text%3E%3C/svg%3E"/>
+<link rel="manifest" href="https://cdn.jsdelivr.net/gh/2598027012/hanjiang-map-data@main/icons/manifest-admin.json"/>
+<!-- 多尺寸 PNG 图标：安卓各品牌自带浏览器创建桌面快捷方式时取用 -->
+<link rel="icon" type="image/png" sizes="192x192" href="https://cdn.jsdelivr.net/gh/2598027012/hanjiang-map-data@main/icons/admin-192.png"/>
+<link rel="icon" type="image/png" sizes="512x512" href="https://cdn.jsdelivr.net/gh/2598027012/hanjiang-map-data@main/icons/admin-512.png"/>
+<link rel="shortcut icon" href="https://cdn.jsdelivr.net/gh/2598027012/hanjiang-map-data@main/icons/admin-192.png"/>
+<link rel="apple-touch-icon" href="https://cdn.jsdelivr.net/gh/2598027012/hanjiang-map-data@main/icons/admin-180.png"/>
+<link rel="apple-touch-icon" sizes="180x180" href="https://cdn.jsdelivr.net/gh/2598027012/hanjiang-map-data@main/icons/admin-180.png"/>
+<meta name="theme-color" content="#1E293B"/>
+<meta name="mobile-web-app-capable" content="yes"/>
+<meta name="application-name" content="地图后台"/>
+<meta name="apple-mobile-web-app-capable" content="yes"/>
+<meta name="apple-mobile-web-app-status-bar-style" content="default"/>
+<meta name="apple-mobile-web-app-title" content="地图后台"/>
+<script src="https://cdn.jsdmirror.com/npm/qrcode-generator@1.4.4/qrcode.min.js"></script>
+<link rel="stylesheet" href="https://cdn.jsdmirror.com/npm/leaflet@1.9.4/dist/leaflet.css"/>
+<script src="https://cdn.jsdmirror.com/npm/leaflet@1.9.4/dist/leaflet.js"></script>
+<style>
+  * { margin:0; padding:0; box-sizing:border-box; }
+  body { font-family:"PingFang SC","Microsoft YaHei",sans-serif; background:#F3F4F6; color:#1F2937; }
+  #header { background:#B91C1C; color:#fff; text-align:center; padding:16px 12px; position:relative; }
+  #header h1 { font-size:20px; }
+  #header p { font-size:12px; color:#FECACA; margin-top:4px; }
+  #map-link {
+    position:absolute; right:12px; top:50%; transform:translateY(-50%);
+    background:rgba(255,255,255,.16); color:#fff; text-decoration:none;
+    border:1px solid rgba(255,255,255,.45); border-radius:18px;
+    padding:7px 14px; font-size:13px; font-weight:600; white-space:nowrap;
+  }
+  #map-link:hover { background:rgba(255,255,255,.28); }
+  .wrap { max-width:900px; margin:18px auto; padding:0 12px 24px; }
+  .card {
+    background:#fff; border-radius:12px; padding:18px 20px; margin-bottom:16px;
+    box-shadow:0 1px 6px rgba(0,0,0,.08);
+  }
+  .card h2 { font-size:16px; color:#7F1D1D; margin-bottom:12px; }
+  .hint { font-size:12.5px; color:#6B7280; line-height:1.8; margin-top:8px; }
+  table { width:100%; border-collapse:collapse; font-size:13px; }
+  th,td { border:1px solid #E5E7EB; padding:7px 8px; text-align:left; }
+  th { background:#F9FAFB; white-space:nowrap; }
+  .lv-高危水域 { color:#DC2626; font-weight:700; }
+  .lv-中危水域 { color:#EAB308; font-weight:700; }
+  .lv-低危水域 { color:#EAB308; font-weight:700; }
+  .lv-救生点   { color:#059669; font-weight:700; }
+  .lv-陡坡深水 { color:#EAB308; font-weight:700; }
+  .lv-水文风险 { color:#DC2626; font-weight:700; }
+  .op-btn {
+    border:none; border-radius:6px; padding:4px 10px; cursor:pointer;
+    font-size:12px; margin:1px 2px; white-space:nowrap;
+  }
+  .op-edit { background:#DBEAFE; color:#1D4ED8; }
+  .op-del  { background:#FEE2E2; color:#B91C1C; }
+  .op-del.arm { background:#B91C1C; color:#fff; font-weight:700; }
+  .form-grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(220px,1fr)); gap:10px; }
+  label { font-size:12.5px; color:#4B5563; display:block; margin-bottom:3px; }
+  input,select {
+    width:100%; border:1px solid #D1D5DB; border-radius:8px; padding:8px 10px;
+    font-size:14px; background:#fff;
+  }
+  .btn {
+    background:#B91C1C; color:#fff; border:none; border-radius:10px;
+    padding:11px 22px; font-size:15px; font-weight:700; cursor:pointer;
+  }
+  .btn-blue { background:#2563EB; }
+  .btn-gray { background:#4B5563; }
+  .btn-green { background:#059669; }
+  .row-btns { display:flex; gap:10px; flex-wrap:wrap; margin-top:14px; }
+  #qr-area { text-align:center; display:none; }
+  #qr-area canvas { border:6px solid #fff; box-shadow:0 2px 10px rgba(0,0,0,.15); border-radius:8px; max-width:92vw; height:auto; }
+  #new-link {
+    word-break:break-all; background:#F9FAFB; border:1px dashed #9CA3AF; border-radius:8px;
+    padding:10px; font-size:12px; color:#374151; margin:12px 0; text-align:left;
+    max-height:110px; overflow-y:auto;
+  }
+  .warn { background:#FEF3C7; color:#92400E; border-radius:8px; padding:8px 12px; font-size:13px; margin-top:10px; }
+  .filter-bar { display:flex; gap:8px; align-items:center; flex-wrap:wrap; margin-bottom:10px; }
+  .filter-bar select { width:auto; }
+  #edit-banner {
+    display:none; background:#EFF6FF; border:1px solid #BFDBFE; color:#1D4ED8;
+    border-radius:8px; padding:8px 12px; font-size:13px; margin-bottom:10px;
+  }
+  .dyn-field { display:none; }
+  .dyn-field.show { display:block; }
+  #footer-credit {
+    text-align:center; color:#9CA3AF; font-size:12px; padding:8px 0 4px; line-height:1.7;
+  }
+  #pick-map { height:280px; border-radius:10px; border:1px solid #D1D5DB; margin-top:12px; }
+  .lv-item {
+    display:inline-flex; align-items:center; gap:6px; background:#F9FAFB;
+    border:1px solid #E5E7EB; border-radius:8px; padding:5px 10px; margin:3px 4px 3px 0; font-size:13px;
+  }
+  .lv-item .dot { width:12px; height:12px; border-radius:50%; }
+  .lv-item button { border:none; background:none; color:#B91C1C; cursor:pointer; font-size:14px; padding:0 2px; }
+  .lv-add-row { display:flex; gap:8px; align-items:end; flex-wrap:wrap; margin-top:10px; }
+  .lv-add-row input[type=text] { width:180px; }
+  .lv-add-row input[type=color] { width:52px; height:38px; padding:2px; cursor:pointer; }
+  a[href*="kimi.com/agent"], iframe[src*="kimi.com"] { display:none !important; }
+  /* 口令输入浮层（页面内嵌，替代系统 prompt，兼容桌面快捷方式/App模式） */
+  #pw-overlay {
+    position:fixed; inset:0; z-index:9999; background:#F3F4F6;
+    display:flex; align-items:center; justify-content:center;
+    visibility:visible;
+  }
+  #pw-box {
+    background:#fff; border-radius:14px; padding:28px 24px;
+    width:86%; max-width:340px; box-shadow:0 4px 24px rgba(0,0,0,.15); text-align:center;
+  }
+  #pw-title { font-size:16px; font-weight:700; color:#7F1D1D; margin-bottom:8px; }
+  #pw-msg { font-size:12.5px; color:#6B7280; line-height:1.7; margin-bottom:14px; white-space:pre-line; }
+  #pw-input {
+    width:100%; padding:10px 12px; font-size:16px;
+    border:1.5px solid #D1D5DB; border-radius:10px; text-align:center; outline:none;
+  }
+  #pw-input:focus { border-color:#B91C1C; }
+  #pw-err { color:#DC2626; font-size:12.5px; min-height:18px; margin-top:8px; line-height:1.5; }
+  #pw-btn {
+    margin-top:8px; width:100%; background:#B91C1C; color:#fff; border:none;
+    border-radius:10px; padding:11px; font-size:15px; font-weight:600; cursor:pointer;
+  }
+  #pw-btn:disabled { opacity:.5; }
+  #pw-cancel {
+    display:inline-block; margin-top:12px; font-size:12.5px; color:#9CA3AF; cursor:pointer;
+  }
+</style>
+<script src="https://www.kimi.com/sdk-seed.js" defer=""></script></head>
+<body style="visibility:hidden">
+<div id="header">
+  <h1>点位后台管理</h1>
+  <p>仅供管理人员使用 · 发布后立即同步到公众地图</p>
+  <a id="map-link" href="index.html">🗺 打开实时点位地图</a>
+</div>
+<div class="wrap">
+
+  <div class="card">
+    <h2>使用说明</h2>
+    <div class="hint">
+      <b>日常更新（二维码不变）：</b>① 在下方添加 / 修改 / 删除点位 → ② 点「🚀 发布到线上」→ 完成，群众扫码立即看到最新数据，<b>无需重新打印二维码</b>。<br/>
+      <b>首次使用</b>需先完成 GitHub 配置（见下方配置区，一次性，约10分钟）；「📡 拉取线上数据」可把线上最新数据载入编辑器继续修改。<br/>
+      蓝天救援队、水上急救站在下方「救援站点管理 🔒」中修改（需维护密码），修改后同样点「发布到线上」生效。
+    </div>
+  </div>
+
+  <div class="card">
+    <h2>线上数据发布配置（首次使用填写一次，仅保存在本浏览器）</h2>
+    <div class="form-grid">
+      <div><label>GitHub 用户名</label><input id="gh-owner" placeholder="如 zhangsan"/></div>
+      <div><label>数据仓库名</label><input id="gh-repo" placeholder="如 hanjiang-map-data"/></div>
+      <div><label>分支</label><input id="gh-branch" placeholder="main"/></div>
+      <div><label>访问令牌 Token</label><input id="gh-token" type="password" placeholder="github_pat_..."/></div>
+    </div>
+    <div class="row-btns">
+      <button class="btn btn-blue" onclick="saveGH()">💾 保存配置</button>
+      <button class="btn btn-gray" onclick="pullOnline()">📡 拉取线上数据</button>
+      <button class="btn btn-green" onclick="publishOnline()">🚀 发布到线上</button>
+    </div>
+    <div class="warn">⚠ 令牌只用于向你自己的仓库写入数据文件，请妥善保管、勿泄露给他人；换电脑/换浏览器需重新填写。</div>
+  </div>
+
+  <div class="card">
+    <h2>地图顶部提示条文字（留空则不显示）</h2>
+    <input id="bar-text" type="text" placeholder="例如：⚠ 数据采集中，点位信息陆续更新"/>
+  </div>
+
+  <div class="card">
+    <h2>点位分类管理</h2>
+    <div id="lv-list"></div>
+    <div class="lv-add-row">
+      <div><label>新分类名称</label><input id="lv-name" type="text" placeholder="如：浅水戏水区"/></div>
+      <div><label>标记颜色</label><input id="lv-color" type="color" value="#DC2626"/></div>
+      <button class="btn btn-blue" style="padding:9px 16px" onclick="addLevel()">＋ 添加分类</button>
+    </div>
+    <div class="hint">内置分类不可删除；自定义分类会随二维码补丁一起下发，公众地图自动按颜色显示标记、晕染圈和图例。删除分类前请先删除或改类该分类下的点位。</div>
+  </div>
+
+  <div class="card">
+    <h2>救援站点管理 🔒</h2>
+    <table id="st-table">
+      <thead><tr><th>名称</th><th>经度</th><th>纬度</th><th>联系人</th><th>电话</th><th>备注</th><th>操作</th></tr></thead>
+      <tbody></tbody>
+    </table>
+    <div id="st-form" style="display:none; margin-top:14px; border-top:1px dashed #D1D5DB; padding-top:14px">
+      <div class="form-grid">
+        <div><label>站点名称</label><input id="st-name"/></div>
+        <div><label>经度 E，GCJ-02</label><input id="st-lon" placeholder="如 111.660957"/></div>
+        <div><label>纬度 N，GCJ-02</label><input id="st-lat" placeholder="如 32.376996"/></div>
+        <div><label>联系人（可留空，留空则地图不显示此行）</label><input id="st-contact" placeholder="如 陈森"/></div>
+        <div><label>联系电话（可留空）</label><input id="st-phone" placeholder="如 13995780307"/></div>
+        <div style="grid-column:1/-1"><label>备注说明（可留空，留空则地图不显示此行）</label><input id="st-note" placeholder="如 24小时值守 / 仅夏季开放 / 距岸边约50米"/></div>
+      </div>
+      <div class="row-btns">
+        <button class="btn btn-blue" onclick="saveStation()">💾 保存站点信息</button>
+        <button class="btn btn-gray" onclick="document.getElementById('st-form').style.display='none'">收起</button>
+      </div>
+    </div>
+    <div class="hint">🔒 修改救援站点需输入<b>维护密码</b>；改完点「🚀 发布到线上」后群众扫码才能看到新信息。蓝天救援队/水上急救站的图标颜色保持系统设计不变。</div>
+  </div>
+
+  <div class="card">
+    <h2>当前点位（<span id="pt-count">0</span> 个）</h2>
+    <div class="filter-bar">
+      <label style="margin:0">按分类筛选：</label>
+      <select id="filter-level" onchange="render()">
+        <option value="">全部</option>
+        <option>救生点</option><option>陡坡深水</option><option>水文风险</option>
+        <option>高危水域</option><option>中危水域</option><option>低危水域</option>
+      </select>
+      <button class="op-btn op-del" id="reset-btn" onclick="resetAll(this)">↺ 还原全部修改</button>
+    </div>
+    <table id="pt-table">
+      <thead><tr>
+        <th>名称</th><th>分类</th><th>经度</th><th>纬度</th><th>来源</th><th>操作</th>
+      </tr></thead>
+      <tbody></tbody>
+    </table>
+    <div class="hint" id="empty-tip">当前筛选下暂无点位。</div>
+  </div>
+
+  <div class="card">
+    <h2 id="form-title">添加点位</h2>
+    <div id="edit-banner"></div>
+    <div class="form-grid">
+      <div><label>点位名称 *</label><input id="f-name" placeholder="如：滨江公园段水域"/></div>
+      <div><label>分类 *</label>
+        <select id="f-level" onchange="syncFormFields()">
+          <option>高危水域</option><option>中危水域</option>
+          <option>低危水域</option><option>救生点</option>
+          <option>陡坡深水</option><option>水文风险</option>
+        </select></div>
+      <div><label>经度 E，GCJ-02 / 奥维默认坐标 *</label><input id="f-lon" placeholder="如 111.671986"/></div>
+      <div><label>纬度 N，GCJ-02 *</label><input id="f-lat" placeholder="如 32.405175"/></div>
+      <div class="dyn-field" data-for="default"><label>出险次数/说明（可留空）</label><input id="f-incidents" placeholder="如 近3年出险 2 起"/></div>
+      <div class="dyn-field" data-for="default 水文风险"><label>风险类型（可留空）</label><input id="f-risks" placeholder="如 水深流急、水下暗流"/></div>
+      <div class="dyn-field" data-for="水文风险"><label>成因推断（可留空）</label><input id="f-cause" placeholder="如 弯道环流顶冲，主流贴岸"/></div>
+      <div class="dyn-field" data-for="救生点"><label>设施配置（可留空）</label><input id="f-equip" placeholder="如 救生圈×2、救生绳、救生杆"/></div>
+      <div class="dyn-field" data-for="救生点"><label>使用说明（可留空）</label><input id="f-use" placeholder="默认：紧急情况下免费取用，用后请放回原位"/></div>
+      <div class="dyn-field" data-for="default 水文风险" style="grid-column:1/-1"><label>安全提示（可留空）</label><input id="f-tips" placeholder="如 严禁下水游泳、戏水"/></div>
+    </div>
+    <div id="pick-map"></div>
+    <div class="hint">💡 也可以直接在上方小地图中<b>点击选点</b>，经纬度会自动填入表单（蓝色标记为当前选中位置）。</div>
+    <div class="row-btns">
+      <button class="btn" id="submit-btn" onclick="submitForm()">＋ 添加点位</button>
+      <button class="btn btn-gray" id="cancel-btn" style="display:none" onclick="cancelEdit()">取消修改</button>
+    </div>
+  </div>
+
+  <div class="card">
+    <h2>生成新二维码</h2>
+    <div class="row-btns">
+      <button class="btn" onclick="genFixedQR()">🖨 生成固定二维码（打印张贴用）</button>
+      <button class="btn btn-blue" onclick="genQR()">🔄 生成预览二维码（含当前修改）</button>
+      <button class="btn btn-green" onclick="previewMap()">👀 预览公众地图效果</button>
+      <button class="btn btn-gray" onclick="copyAdminLink()">复制后台续编链接</button>
+    </div>
+    <div class="row-btns">
+      <button class="btn btn-gray" onclick="exportData()">📤 导出全部数据备份</button>
+      <button class="btn btn-gray" onclick="document.getElementById('import-file').click()">📥 导入数据备份</button>
+      <input id="import-file" type="file" accept=".json" style="display:none" onchange="importData(this)"/>
+    </div>
+    <div class="hint">导出的 JSON 备份文件包含全部增删改与自定义分类，可用于存档或交接；导入后点「生成新二维码」即可生效。</div>
+    <div id="qr-area">
+      <div id="new-link"></div>
+      <div id="qr-box"></div>
+      <div class="row-btns" style="justify-content:center">
+        <button class="btn" onclick="downloadQR()">⬇ 下载二维码PNG</button>
+      </div>
+      <div class="warn">⚠ <b>固定二维码</b>只含纯地图网址，打印张贴后永久有效，以后更新数据用「发布到线上」即可，无需换码；<b>预览二维码</b>含当前修改内容，仅供临时查看效果，请勿张贴。</div>
+    </div>
+  </div>
+
+  <div class="card">
+    <h2>帮助与系统维护</h2>
+    <div class="row-btns">
+      <button class="btn btn-blue" onclick="copyMaintPrompt()">🤖 不会操作？复制这段问AI助手</button>
+      <button class="btn btn-gray" onclick="changePass()">🔑 修改后台口令 🔒</button>
+      <button class="btn btn-gray" onclick="changeMaintPass()">🔐 修改维护密码 🔒</button>
+      <button class="btn btn-gray" onclick="downloadSource()">⬇ 下载系统源码（实践队专用）🔒</button>
+    </div>
+    <div class="hint">
+      <b>遇到不会的操作？</b>点左边蓝色按钮复制一段系统说明 → 打开 Kimi 等 AI 助手 → 粘贴并接着说你的问题（例如"我怎么添加一个点位""发布失败怎么办"），AI 看懂系统情况后会手把手教你。<br/>
+      带 🔒 的功能需输入<b>维护密码</b>（仅实践队掌握，与后台口令不同），工作人员点开会提示无权限，属于正常现象。
+    </div>
+  </div>
+
+  <div id="footer-credit">
+    汉江老河口段防溺水警示图 · 点位后台管理<br/>
+    <b>华中科技大学2026暑期社会实践团队 制作</b>
+  </div>
+
+</div>
+
+<script>
+/* ============ 访问口令（远程可管理：校验值存 data.json 的 admin.passHash，可在后台直接改） ============ */
+// 默认口令 hustsj2026 的 SHA-256（线上 data.json 无 admin 字段时的兜底）
+const DEFAULT_PASS_HASH = '6bf9cc4b5d825b798b8ba9a5b52eed30a4c39bfb3f34a49f00f6ca7a531fbbd4';
+// 默认维护密码 wh20260805 的 SHA-256（仅实践队掌握；线上 admin.maintHash 可覆盖）
+const DEFAULT_MAINT_HASH = 'fdc6e773bc4b9ecc580d4cce8e900619bd6bcedf50182e4518b0adf4818b177a';
+// 线上数据仓库位置（与 index.html 的 REMOTE 一致；只读无需令牌）
+const REMOTE_CFG = { owner:'2598027012', repo:'hanjiang-map-data', branch:'main', path:'data.json' };
+async function sha256(s){
+  const b = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(s));
+  return [...new Uint8Array(b)].map(x => x.toString(16).padStart(2,'0')).join('');
+}
+// 静默拉取线上 data.json（公开仓库只读，无需登录/令牌；结果缓存避免重复请求）
+let _rawCache = null;
+async function fetchRemoteRaw(){
+  if(_rawCache) return _rawCache;
+  const { owner, repo, branch, path } = REMOTE_CFG;
+  const bust = '_=' + Date.now();
+  const sources = [
+    { url:`https://api.github.com/repos/${owner}/${repo}/contents/${path}?ref=${branch}&${bust}`,
+      headers:{ 'Accept':'application/vnd.github.raw+json' } },
+    { url:`https://cdn.jsdmirror.com/gh/${owner}/${repo}@${branch}/${path}?${bust}` },
+    { url:`https://cdn.jsdelivr.net/gh/${owner}/${repo}@${branch}/${path}?${bust}` }
+  ];
+  for(const s of sources){
+    try{
+      const r = await fetch(s.url, { headers: s.headers || {} });
+      if(!r.ok) continue;
+      const j = await r.json();
+      if(j && typeof j === 'object'){ _rawCache = j; return j; }
+    }catch(e){}
+  }
+  return null;
+}
+let _passHashCache = null;
+async function currentPassHash(){
+  if(_passHashCache) return _passHashCache;
+  let h = DEFAULT_PASS_HASH;
+  const j = await fetchRemoteRaw();
+  if(j && j.admin && j.admin.passHash) h = j.admin.passHash;
+  _passHashCache = h;
+  return h;
+}
+let _maintHashCache = null;
+async function currentMaintHash(){
+  if(_maintHashCache) return _maintHashCache;
+  let h = DEFAULT_MAINT_HASH;
+  const j = await fetchRemoteRaw();
+  if(j && j.admin && j.admin.maintHash) h = j.admin.maintHash;
+  _maintHashCache = h;
+  return h;
+}
+/* 手动复制浮层：clipboard API 失败时的兜底（替代系统 prompt，兼容 App 模式） */
+function copyFallback(title, text){
+  const ov = document.createElement('div');
+  ov.id = 'pw-overlay';
+  ov.innerHTML =
+    '<div id="pw-box">' +
+      '<div id="pw-title"></div>' +
+      '<textarea id="pw-copy" readonly style="width:100%;height:110px;font-size:12px;border:1.5px solid #D1D5DB;border-radius:10px;padding:8px"></textarea>' +
+      '<div id="pw-msg" style="margin-top:8px">长按上方文本全选复制</div>' +
+      '<button id="pw-btn">关 闭</button>' +
+    '</div>';
+  ov.querySelector('#pw-title').textContent = title;
+  ov.querySelector('#pw-copy').value = text;
+  document.body.appendChild(ov);
+  const ta = ov.querySelector('#pw-copy');
+  ta.focus(); ta.select();
+  ov.querySelector('#pw-btn').onclick = () => ov.remove();
+}
+/* 页面内嵌密码输入框：返回 Promise，确定→输入内容，取消→null（替代系统 prompt，兼容 App 模式） */
+function pwPrompt(title, msg){
+  return new Promise(resolve => {
+    const ov = document.createElement('div');
+    ov.id = 'pw-overlay';
+    ov.innerHTML =
+      '<div id="pw-box">' +
+        '<div id="pw-title"></div>' +
+        '<div id="pw-msg"></div>' +
+        '<input id="pw-input" type="password" autocomplete="off" placeholder="请输入密码"/>' +
+        '<div id="pw-err"></div>' +
+        '<button id="pw-btn">确 定</button>' +
+        '<span id="pw-cancel">取消</span>' +
+      '</div>';
+    ov.querySelector('#pw-title').textContent = title;
+    ov.querySelector('#pw-msg').textContent = msg;
+    document.body.appendChild(ov);
+    const input = ov.querySelector('#pw-input');
+    setTimeout(() => input.focus(), 80);
+    const done = v => { ov.remove(); resolve(v); };
+    ov.querySelector('#pw-btn').onclick = () => done(input.value);
+    ov.querySelector('#pw-cancel').onclick = () => done(null);
+    input.onkeydown = e => { if(e.key === 'Enter') done(input.value); };
+  });
+}
+/* 维护密码验证：下载源码 / 改口令 / 改维护密码前调用；本次打开后台期间只需验证一次 */
+let _maintOk = false;
+async function verifyMaint(){
+  if(_maintOk) return true;
+  const h = await currentMaintHash();
+  const input = await pwPrompt('🔒 维护验证', '此功能仅限实践队维护同学\n请输入维护密码（与后台口令不同，工作人员无需知道）：');
+  if(input === null) return false;
+  if(await sha256(input) === h){ _maintOk = true; return true; }
+  alert('维护密码错误');
+  return false;
+}
+function blockPage(){
+  document.body.innerHTML = '<div style="text-align:center;padding:80px 20px;color:#6B7280;font-size:15px">🔒 未授权访问<br/><span style="font-size:12.5px">如需管理点位请联系华中科技大学暑期社会实践团队维护同学</span></div>';
+  document.body.style.visibility = 'visible';
+  throw new Error('unauthorized');
+}
+(async function gate(){
+  // 立即并行发起远程拉取（不等它完成）；用户输口令的时间足够网络请求跑完
+  const hashPromise = currentPassHash();
+  // 页面内嵌口令浮层（系统 prompt 在桌面快捷方式/App 模式下被屏蔽，必须内嵌）
+  const ov = document.createElement('div');
+  ov.id = 'pw-overlay';
+  ov.innerHTML =
+    '<div id="pw-box">' +
+      '<div id="pw-title">🔒 点位后台管理</div>' +
+      '<div id="pw-msg">请输入后台管理口令</div>' +
+      '<input id="pw-input" type="password" autocomplete="off" placeholder="请输入口令"/>' +
+      '<div id="pw-err"></div>' +
+      '<button id="pw-btn">进 入</button>' +
+    '</div>';
+  document.body.appendChild(ov);
+  const input = ov.querySelector('#pw-input');
+  const errEl = ov.querySelector('#pw-err');
+  const btn = ov.querySelector('#pw-btn');
+  setTimeout(() => input.focus(), 80);
+  let fail = 0;
+  await new Promise(resolve => {
+    async function submit(){
+      const v = input.value;
+      if(!v || btn.disabled) return;
+      btn.disabled = true;
+      const passHash = await hashPromise;   // 一般此处已完成，无需等待
+      if(await sha256(v) === passHash){ ov.remove(); resolve(); return; }
+      fail++;
+      errEl.textContent = `口令错误（已错 ${fail} 次）· 忘记口令请联系实践队维护同学重置`;
+      input.value = '';
+      // 递增锁定，防止暴力尝试（1s → 2s → 4s → … 最长15s）
+      setTimeout(() => { btn.disabled = false; input.focus(); },
+        Math.min(1000 * Math.pow(2, fail - 1), 15000));
+    }
+    btn.onclick = submit;
+    input.onkeydown = e => { if(e.key === 'Enter') submit(); };
+  });
+  // 验证通过后才渲染后台界面（此前页面整体隐藏）
+  syncFormFields();
+  refreshLevelSelects();
+  renderLevels();
+  renderStations();
+  render();
+  initPickMap();
+  fillGHForm();
+  document.body.style.visibility = 'visible';
+})();
+
+/* ============ 内置实测点位基线（与公众地图 index.html 内置数据一致；后台生成的是"修改补丁"） ============ */
+const BASE_POINTS = [
+    {"id": "01", "name": "救生设施投放点 01", "level": "救生点", "lon": 111.662394, "lat": 32.380152, "info": [["点位编号", "01"], ["设施配置", "救生圈、救生绳、救生杆，以现场实物为准"], ["使用说明", "紧急情况下免费取用，用后请放回原位"]], "warn": "非紧急情况请勿挪用救生设施"},
+    {"id": "02", "name": "救生设施投放点 02", "level": "救生点", "lon": 111.663335, "lat": 32.38187, "info": [["点位编号", "02"], ["设施配置", "救生圈、救生绳、救生杆，以现场实物为准"], ["使用说明", "紧急情况下免费取用，用后请放回原位"]], "warn": "非紧急情况请勿挪用救生设施"},
+    {"id": "03", "name": "救生设施投放点 03", "level": "救生点", "lon": 111.664484, "lat": 32.383417, "info": [["点位编号", "03"], ["设施配置", "救生圈、救生绳、救生杆，以现场实物为准"], ["使用说明", "紧急情况下免费取用，用后请放回原位"]], "warn": "非紧急情况请勿挪用救生设施"},
+    {"id": "04", "name": "救生设施投放点 04", "level": "救生点", "lon": 111.667091, "lat": 32.386155, "info": [["点位编号", "04"], ["设施配置", "救生圈、救生绳、救生杆，以现场实物为准"], ["使用说明", "紧急情况下免费取用，用后请放回原位"]], "warn": "非紧急情况请勿挪用救生设施"},
+    {"id": "05", "name": "救生设施投放点 05", "level": "救生点", "lon": 111.668824, "lat": 32.387742, "info": [["点位编号", "05"], ["设施配置", "救生圈、救生绳、救生杆，以现场实物为准"], ["使用说明", "紧急情况下免费取用，用后请放回原位"]], "warn": "非紧急情况请勿挪用救生设施"},
+    {"id": "06", "name": "救生设施投放点 06", "level": "救生点", "lon": 111.671569, "lat": 32.38978, "info": [["点位编号", "06"], ["设施配置", "救生圈、救生绳、救生杆，以现场实物为准"], ["使用说明", "紧急情况下免费取用，用后请放回原位"]], "warn": "非紧急情况请勿挪用救生设施"},
+    {"id": "07", "name": "救生设施投放点 07", "level": "救生点", "lon": 111.672509, "lat": 32.390286, "info": [["点位编号", "07"], ["设施配置", "救生圈、救生绳、救生杆，以现场实物为准"], ["使用说明", "紧急情况下免费取用，用后请放回原位"]], "warn": "非紧急情况请勿挪用救生设施"},
+    {"id": "08", "name": "救生设施投放点 08", "level": "救生点", "lon": 111.676043, "lat": 32.39258, "info": [["点位编号", "08"], ["设施配置", "救生圈、救生绳、救生杆，以现场实物为准"], ["使用说明", "紧急情况下免费取用，用后请放回原位"]], "warn": "非紧急情况请勿挪用救生设施"},
+    {"id": "09", "name": "救生设施投放点 09", "level": "救生点", "lon": 111.681148, "lat": 32.399996, "info": [["点位编号", "09"], ["设施配置", "救生圈、救生绳、救生杆，以现场实物为准"], ["使用说明", "紧急情况下免费取用，用后请放回原位"]], "warn": "非紧急情况请勿挪用救生设施"},
+    {"id": "10", "name": "救生设施投放点 10", "level": "救生点", "lon": 111.680399, "lat": 32.401516, "info": [["点位编号", "10"], ["设施配置", "救生圈、救生绳、救生杆，以现场实物为准"], ["使用说明", "紧急情况下免费取用，用后请放回原位"]], "warn": "非紧急情况请勿挪用救生设施"},
+    {"id": "11", "name": "救生设施投放点 11", "level": "救生点", "lon": 111.679202, "lat": 32.402686, "info": [["点位编号", "11"], ["设施配置", "救生圈、救生绳、救生杆，以现场实物为准"], ["使用说明", "紧急情况下免费取用，用后请放回原位"]], "warn": "非紧急情况请勿挪用救生设施"},
+    {"id": "12", "name": "救生设施投放点 12", "level": "救生点", "lon": 111.678828, "lat": 32.40307, "info": [["点位编号", "12"], ["设施配置", "救生圈、救生绳、救生杆，以现场实物为准"], ["使用说明", "紧急情况下免费取用，用后请放回原位"]], "warn": "非紧急情况请勿挪用救生设施"},
+    {"id": "13", "name": "救生设施投放点 13", "level": "救生点", "lon": 111.675843, "lat": 32.406032, "info": [["点位编号", "13"], ["设施配置", "救生圈、救生绳、救生杆，以现场实物为准"], ["使用说明", "紧急情况下免费取用，用后请放回原位"]], "warn": "非紧急情况请勿挪用救生设施"},
+    {"id": "w1", "name": "弯道深槽·漩涡易发区", "level": "水文风险", "lon": 111.67, "lat": 32.4078, "info": [["风险类型", "弯道环流、凹岸深槽、回流漩涡"], ["成因推断", "汉江弯道顶冲段，主流贴岸、水深流急"]], "warn": "严禁下水游泳、捕捞，行船注意避让"},
+    {"id": "w2", "name": "江心洲滩·紊流暗流区", "level": "水文风险", "lon": 111.6645, "lat": 32.3905, "info": [["风险类型", "洲滩分流绕流、暗流紊乱、水下沙丘陡坎"], ["成因推断", "江心洲滩使水流分叉交汇，水下地形复杂多变"]], "warn": "切勿蹚水前往洲滩，周边水下深浅突变"},
+    {"id": "w3", "name": "桥墩紊流·漩涡区", "level": "水文风险", "lon": 111.6587, "lat": 32.3811, "info": [["风险类型", "桥墩绕流漩涡、局部冲刷深坑"], ["成因推断", "光化汉江大桥桥墩扰动水流，桥区局部冲刷加深"]], "warn": "严禁在桥区水域游泳、垂钓、戏水"},
+    {"id": "w4", "name": "闸坝调度·水位骤变警示区", "level": "水文风险", "lon": 111.6575, "lat": 32.374, "info": [["风险类型", "水位骤涨骤落、流速突然增大"], ["成因推断", "下游约3公里为王甫洲水利枢纽，23孔泄水闸，泄洪与发电调度可致本段水位、流速骤变"]], "warn": "听到警报或见水位快速上涨，立即撤离岸边"},
+    {"id": "14", "name": "陡坡危险点：水深危险！", "level": "陡坡深水", "lon": 111.675616, "lat": 32.40577, "info": [["点位编号", "14"], ["风险类型", "岸坡陡峭、入水即深水、坡面湿滑易坠跌"]], "warn": "严禁下水游泳、戏水、垂钓，请勿靠近岸边湿滑区域"},
+    {"id": "15", "name": "陡坡危险点：水深危险！", "level": "陡坡深水", "lon": 111.679241, "lat": 32.402245, "info": [["点位编号", "15"], ["风险类型", "岸坡陡峭、入水即深水、坡面湿滑易坠跌"]], "warn": "严禁下水游泳、戏水、垂钓，请勿靠近岸边湿滑区域"},
+    {"id": "16", "name": "陡坡危险点：水深危险！", "level": "陡坡深水", "lon": 111.680848, "lat": 32.399904, "info": [["点位编号", "16"], ["风险类型", "岸坡陡峭、入水即深水、坡面湿滑易坠跌"]], "warn": "严禁下水游泳、戏水、垂钓，请勿靠近岸边湿滑区域"},
+    {"id": "17", "name": "陡坡危险点：水深危险！", "level": "陡坡深水", "lon": 111.679958, "lat": 32.397634, "info": [["点位编号", "17"], ["风险类型", "岸坡陡峭、入水即深水、坡面湿滑易坠跌"]], "warn": "严禁下水游泳、戏水、垂钓，请勿靠近岸边湿滑区域"},
+    {"id": "18", "name": "陡坡危险点：水深危险！", "level": "陡坡深水", "lon": 111.678391, "lat": 32.395515, "info": [["点位编号", "18"], ["风险类型", "岸坡陡峭、入水即深水、坡面湿滑易坠跌"]], "warn": "严禁下水游泳、戏水、垂钓，请勿靠近岸边湿滑区域"},
+    {"id": "19", "name": "陡坡危险点：水深危险！", "level": "陡坡深水", "lon": 111.677588, "lat": 32.394083, "info": [["点位编号", "19"], ["风险类型", "岸坡陡峭、入水即深水、坡面湿滑易坠跌"]], "warn": "严禁下水游泳、戏水、垂钓，请勿靠近岸边湿滑区域"},
+    {"id": "20", "name": "陡坡危险点：水深危险！", "level": "陡坡深水", "lon": 111.676967, "lat": 32.39338, "info": [["点位编号", "20"], ["风险类型", "岸坡陡峭、入水即深水、坡面湿滑易坠跌"]], "warn": "严禁下水游泳、戏水、垂钓，请勿靠近岸边湿滑区域"},
+    {"id": "21", "name": "陡坡危险点：水深危险！", "level": "陡坡深水", "lon": 111.675722, "lat": 32.392437, "info": [["点位编号", "21"], ["风险类型", "岸坡陡峭、入水即深水、坡面湿滑易坠跌"]], "warn": "严禁下水游泳、戏水、垂钓，请勿靠近岸边湿滑区域"},
+    {"id": "22", "name": "陡坡危险点：水深危险！", "level": "陡坡深水", "lon": 111.67559, "lat": 32.39236, "info": [["点位编号", "22"], ["风险类型", "岸坡陡峭、入水即深水、坡面湿滑易坠跌"]], "warn": "严禁下水游泳、戏水、垂钓，请勿靠近岸边湿滑区域"},
+    {"id": "23", "name": "陡坡危险点：水深危险！", "level": "陡坡深水", "lon": 111.670098, "lat": 32.388803, "info": [["点位编号", "23"], ["风险类型", "岸坡陡峭、入水即深水、坡面湿滑易坠跌"]], "warn": "严禁下水游泳、戏水、垂钓，请勿靠近岸边湿滑区域"},
+    {"id": "24", "name": "陡坡危险点：水深危险！", "level": "陡坡深水", "lon": 111.669176, "lat": 32.388119, "info": [["点位编号", "24"], ["风险类型", "岸坡陡峭、入水即深水、坡面湿滑易坠跌"]], "warn": "严禁下水游泳、戏水、垂钓，请勿靠近岸边湿滑区域"},
+    {"id": "25", "name": "陡坡危险点：水深危险！", "level": "陡坡深水", "lon": 111.668718, "lat": 32.3878, "info": [["点位编号", "25"], ["风险类型", "岸坡陡峭、入水即深水、坡面湿滑易坠跌"]], "warn": "严禁下水游泳、戏水、垂钓，请勿靠近岸边湿滑区域"},
+    {"id": "26", "name": "陡坡危险点：水深危险！", "level": "陡坡深水", "lon": 111.667971, "lat": 32.387164, "info": [["点位编号", "26"], ["风险类型", "岸坡陡峭、入水即深水、坡面湿滑易坠跌"]], "warn": "严禁下水游泳、戏水、垂钓，请勿靠近岸边湿滑区域"},
+    {"id": "27", "name": "陡坡危险点：水深危险！", "level": "陡坡深水", "lon": 111.667661, "lat": 32.386855, "info": [["点位编号", "27"], ["风险类型", "岸坡陡峭、入水即深水、坡面湿滑易坠跌"]], "warn": "严禁下水游泳、戏水、垂钓，请勿靠近岸边湿滑区域"},
+    {"id": "28", "name": "陡坡危险点：水深危险！", "level": "陡坡深水", "lon": 111.667012, "lat": 32.386219, "info": [["点位编号", "28"], ["风险类型", "岸坡陡峭、入水即深水、坡面湿滑易坠跌"]], "warn": "严禁下水游泳、戏水、垂钓，请勿靠近岸边湿滑区域"},
+    {"id": "29", "name": "陡坡危险点：水深危险！", "level": "陡坡深水", "lon": 111.664417, "lat": 32.383462, "info": [["点位编号", "29"], ["风险类型", "岸坡陡峭、入水即深水、坡面湿滑易坠跌"]], "warn": "严禁下水游泳、戏水、垂钓，请勿靠近岸边湿滑区域"},
+    {"id": "30", "name": "陡坡危险点：水深危险！", "level": "陡坡深水", "lon": 111.664138, "lat": 32.383119, "info": [["点位编号", "30"], ["风险类型", "岸坡陡峭、入水即深水、坡面湿滑易坠跌"]], "warn": "严禁下水游泳、戏水、垂钓，请勿靠近岸边湿滑区域"},
+    {"id": "31", "name": "陡坡危险点：水深危险！", "level": "陡坡深水", "lon": 111.661547, "lat": 32.379032, "info": [["点位编号", "31"], ["风险类型", "岸坡陡峭、入水即深水、坡面湿滑易坠跌"]], "warn": "严禁下水游泳、戏水、垂钓，请勿靠近岸边湿滑区域"},
+    {"id": "32", "name": "陡坡危险点：水深危险！", "level": "陡坡深水", "lon": 111.661178, "lat": 32.378087, "info": [["点位编号", "32"], ["风险类型", "岸坡陡峭、入水即深水、坡面湿滑易坠跌"]], "warn": "严禁下水游泳、戏水、垂钓，请勿靠近岸边湿滑区域"}
+  ];
+const BASE_IDS = new Set(BASE_POINTS.map(p => p.id));
+const DEFAULT_BAR = "⚠ 点位为实地勘探实测，信息持续核实更新中";
+
+/* ============ 补丁状态：removed（删）+ modified（改）+ added（增）+ customLevels（自定义分类） ============ */
+let removed = new Set();
+let modified = {};
+let added = [];
+let barText = DEFAULT_BAR;
+let customLevels = [];   // [{name, color}]，随补丁下发，公众地图自动识别
+
+/* 救援站点（与 index.html 的 BUILTIN_STATIONS 一致；修改需维护密码，随发布写入 data.json） */
+const BASE_STATIONS = [
+  { name:"蓝天救援队", lon:111.660957, lat:32.376996, color:"#2563EB", icon:"救",
+    contact:"陈森", phone:"13995780307", note:"" },
+  { name:"水上急救站", lon:111.660962, lat:32.377628, color:"#E11D48", icon:"✚",
+    contact:"", phone:"", note:"" }
+];
+let stations = JSON.parse(JSON.stringify(BASE_STATIONS));
+function renderStations(){
+  const tb = document.querySelector('#st-table tbody');
+  tb.innerHTML = '';
+  stations.forEach((st, i) => {
+    const tr = document.createElement('tr');
+    tr.innerHTML = `
+      <td>${esc(st.name)}</td><td>${st.lon}</td><td>${st.lat}</td>
+      <td>${esc(st.contact || '—')}</td>
+      <td>${esc(st.phone || '—')}</td>
+      <td>${esc(st.note || '—')}</td>
+      <td><button class="op-btn op-edit" onclick="editStation(${i})">修改 🔒</button></td>`;
+    tb.appendChild(tr);
+  });
+}
+let editStIdx = null;
+async function editStation(i){
+  if(!await verifyMaint()) return;   // 🔒 维护密码
+  const st = stations[i];
+  editStIdx = i;
+  document.getElementById('st-name').value = st.name;
+  document.getElementById('st-lon').value = st.lon;
+  document.getElementById('st-lat').value = st.lat;
+  document.getElementById('st-contact').value = st.contact || '';
+  document.getElementById('st-phone').value = st.phone || '';
+  document.getElementById('st-note').value = st.note || '';
+  document.getElementById('st-form').style.display = 'block';
+  document.getElementById('st-name').scrollIntoView({ behavior:'smooth', block:'center' });
+}
+function saveStation(){
+  if(editStIdx === null) return;
+  const name = document.getElementById('st-name').value.trim();
+  const lon = parseFloat(document.getElementById('st-lon').value);
+  const lat = parseFloat(document.getElementById('st-lat').value);
+  if(!name){ alert('请填写站点名称'); return; }
+  if(isNaN(lon) || isNaN(lat) || lon<70 || lon>140 || lat<0 || lat>60){ alert('经纬度格式有误'); return; }
+  const st = stations[editStIdx];
+  st.name = name; st.lon = lon; st.lat = lat;
+  st.contact = document.getElementById('st-contact').value.trim();
+  st.phone = document.getElementById('st-phone').value.trim();
+  st.note = document.getElementById('st-note').value.trim();
+  editStIdx = null;
+  document.getElementById('st-form').style.display = 'none';
+  renderStations();
+  alert('已保存（记得点「🚀 发布到线上」让群众看到）');
+}
+
+/* 内置分类颜色（与公众地图 LEVEL_COLORS 一致） */
+const BUILTIN_LEVELS = [
+  { name:'高危水域', color:'#DC2626' }, { name:'中危水域', color:'#EAB308' },
+  { name:'低危水域', color:'#EAB308' }, { name:'救生点',   color:'#059669' },
+  { name:'陡坡深水', color:'#EAB308' }, { name:'水文风险', color:'#DC2626' }
+];
+function allLevels(){ return BUILTIN_LEVELS.concat(customLevels); }
+function levelColor(name){
+  const l = allLevels().find(x => x.name === name);
+  return l ? l.color : '#DC2626';
+}
+
+/* 分类下拉框（表单 + 筛选）与分类管理列表 */
+function refreshLevelSelects(){
+  const form = document.getElementById('f-level');
+  const filter = document.getElementById('filter-level');
+  const keepF = form.value, keepT = filter.value;
+  form.innerHTML = ''; filter.innerHTML = '<option value="">全部</option>';
+  allLevels().forEach(l => {
+    form.insertAdjacentHTML('beforeend', `<option>${esc(l.name)}</option>`);
+    filter.insertAdjacentHTML('beforeend', `<option>${esc(l.name)}</option>`);
+  });
+  if(allLevels().some(l => l.name === keepF)) form.value = keepF;
+  if(allLevels().some(l => l.name === keepT)) filter.value = keepT;
+}
+function renderLevels(){
+  const box = document.getElementById('lv-list');
+  box.innerHTML = '';
+  BUILTIN_LEVELS.forEach(l => {
+    box.insertAdjacentHTML('beforeend',
+      `<span class="lv-item"><span class="dot" style="background:${l.color}"></span>${l.name}<span style="color:#9CA3AF;font-size:11px">内置</span></span>`);
+  });
+  customLevels.forEach(l => {
+    box.insertAdjacentHTML('beforeend',
+      `<span class="lv-item"><span class="dot" style="background:${esc(l.color)}"></span>${esc(l.name)}<button title="删除此分类" onclick="delLevel('${esc(l.name)}')">✕</button></span>`);
+  });
+}
+function addLevel(){
+  const name = document.getElementById('lv-name').value.trim();
+  const color = document.getElementById('lv-color').value;
+  if(!name){ alert('请填写分类名称'); return; }
+  if(allLevels().some(l => l.name === name)){ alert('该分类已存在'); return; }
+  customLevels.push({ name, color });
+  document.getElementById('lv-name').value = '';
+  refreshLevelSelects(); renderLevels();
+}
+function delLevel(name){
+  const used = mergedPoints().some(p => p.level === name);
+  if(used){ alert('该分类下仍有点位，请先删除或改类这些点位'); return; }
+  if(!confirm(`确认删除分类「${name}」？`)) return;
+  customLevels = customLevels.filter(l => l.name !== name);
+  refreshLevelSelects(); renderLevels(); render();
+}
+
+function encodeCfg(cfg){
+  // URL安全Base64：避免 + / 在链接中被错误解析
+  return btoa(unescape(encodeURIComponent(JSON.stringify(cfg))))
+    .replace(/\+/g, '-').replace(/\//g, '_');
+}
+function decodeCfg(str){
+  try{
+    return JSON.parse(decodeURIComponent(escape(atob(str.replace(/-/g,'+').replace(/_/g,'/')))));
+  }catch(e){}
+  return null;
+}
+// 从本页链接 #cfg= 读取补丁（便于续编）
+(function loadFromHash(){
+  if(!location.hash.startsWith('#cfg=')) return;
+  const cfg = decodeCfg(location.hash.slice(5));
+  if(!cfg) return;
+  if(Array.isArray(cfg.removed) || Array.isArray(cfg.added) || cfg.modified){
+    removed = new Set(cfg.removed || []);
+    added = cfg.added || [];
+    modified = cfg.modified || {};
+  }else if(Array.isArray(cfg.points)){   // 旧版完整格式：视为全部为后台新增
+    added = cfg.points;
+  }
+  if(Array.isArray(cfg.levels)) customLevels = cfg.levels;   // 自定义分类
+  if(cfg.bar !== undefined) barText = cfg.bar;
+})();
+
+// 公众地图页地址（与本页同目录）
+function publicBase(){
+  return location.origin + location.pathname.replace(/admin\.html$/, 'index.html');
+}
+function adminBase(){
+  return location.origin + location.pathname;
+}
+function mergedPoints(){
+  return BASE_POINTS
+    .filter(p => !removed.has(p.id))
+    .map(p => modified[p.id] ? Object.assign({}, p, modified[p.id], { id:p.id }) : p)
+    .concat(added);
+}
+function esc(s){ return String(s).replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c])); }
+
+/* ============ 渲染点位表 ============ */
+function render(){
+  document.getElementById('bar-text').value = barText || '';
+  const flt = document.getElementById('filter-level').value;
+  const tb = document.querySelector('#pt-table tbody');
+  tb.innerHTML = '';
+  let shown = 0;
+  mergedPoints().forEach(p => {
+    if(flt && p.level !== flt) return;
+    shown++;
+    const isBase = BASE_IDS.has(p.id);
+    const isMod = isBase && !!modified[p.id];
+    const srcHtml = isMod ? '<span style="color:#D97706">实测·改</span>'
+                  : isBase ? '<span style="color:#6B7280">实测</span>'
+                  : '<span style="color:#2563EB">新增</span>';
+    const tr = document.createElement('tr');
+    tr.innerHTML = `
+      <td>${esc(p.name)}</td>
+      <td style="color:${levelColor(p.level)};font-weight:700">${esc(p.level)}</td>
+      <td>${p.lon}</td><td>${p.lat}</td>
+      <td>${srcHtml}</td>
+      <td style="white-space:nowrap">
+        <button class="op-btn op-edit" onclick="startEdit('${p.id}')">修改</button>
+        <button class="op-btn op-del" onclick="delPoint(this,'${p.id}')">删除</button>
+      </td>`;
+    tb.appendChild(tr);
+  });
+  document.getElementById('pt-count').textContent = mergedPoints().length;
+  document.getElementById('empty-tip').style.display = shown ? 'none' : 'block';
+  refreshPickPoints();   // 同步刷新小地图点位
+}
+
+/* ============ 分类联动表单字段 ============ */
+function syncFormFields(){
+  const lv = document.getElementById('f-level').value;
+  const cat = (lv === '救生点') ? '救生点' : (lv === '水文风险') ? '水文风险' : 'default';
+  document.querySelectorAll('.dyn-field').forEach(el => {
+    el.classList.toggle('show', el.dataset.for.split(' ').includes(cat));
+  });
+}
+
+/* ============ 表单：添加 / 保存修改 ============ */
+let editingId = null;
+function formVal(id){ return document.getElementById(id).value.trim(); }
+
+function buildPointFromForm(id, existing){
+  const name = formVal('f-name'), level = formVal('f-level');
+  const lon = parseFloat(formVal('f-lon')), lat = parseFloat(formVal('f-lat'));
+  if(!name){ alert('请填写点位名称'); return null; }
+  if(isNaN(lon) || isNaN(lat) || lon<70 || lon>140 || lat<0 || lat>60){
+    alert('经纬度格式有误，请检查（GCJ-02坐标，如 111.671986 / 32.405175）'); return null;
+  }
+  const p = { id, name, level, lon, lat };
+  const info = [];
+  if(level === '救生点'){
+    const equip = formVal('f-equip'), use = formVal('f-use');
+    if(equip) info.push(["设施配置", equip]);
+    info.push(["使用说明", use || "紧急情况下免费取用，用后请放回原位"]);
+    p.warn = "非紧急情况请勿挪用救生设施";
+  }else if(level === '水文风险'){
+    if(formVal('f-risks')) info.push(["风险类型", formVal('f-risks')]);
+    if(formVal('f-cause')) info.push(["成因推断", formVal('f-cause')]);
+    if(formVal('f-tips')) p.warn = formVal('f-tips');
+  }else{
+    if(formVal('f-incidents')) info.push(["出险次数", formVal('f-incidents')]);
+    if(formVal('f-risks')) info.push(["风险类型", formVal('f-risks')]);
+    if(formVal('f-tips')) p.warn = formVal('f-tips');
+  }
+  // 编辑内置点位时保留"点位编号"行
+  if(existing && Array.isArray(existing.info)){
+    const idRow = existing.info.find(r => r[0] === '点位编号');
+    if(idRow) info.unshift(idRow);
+  }
+  if(info.length) p.info = info;
+  return p;
+}
+
+function clearForm(){
+  ['f-name','f-lon','f-lat','f-incidents','f-risks','f-cause','f-equip','f-use','f-tips']
+    .forEach(id => document.getElementById(id).value = '');
+}
+function submitForm(){
+  const existing = editingId ? mergedPoints().find(p => p.id === editingId) : null;
+  const p = buildPointFromForm(editingId || ('a' + Date.now()), existing);
+  if(!p) return;
+  if(editingId){
+    if(BASE_IDS.has(editingId)) modified[editingId] = p;          // 内置点位 → 记入"改"补丁
+    else added = added.map(q => q.id === editingId ? p : q);      // 新增点位 → 直接更新
+    cancelEdit();
+  }else{
+    added.push(p);
+    clearForm();
+  }
+  render();
+}
+function startEdit(id){
+  const p = mergedPoints().find(q => q.id === id);
+  if(!p) return;
+  editingId = id;
+  document.getElementById('f-name').value = p.name;
+  document.getElementById('f-level').value = p.level;
+  document.getElementById('f-lon').value = p.lon;
+  document.getElementById('f-lat').value = p.lat;
+  syncFormFields();
+  // 回填扩展字段
+  const getInfo = k => (Array.isArray(p.info) ? (p.info.find(r => r[0] === k) || [,''])[1] : '') || '';
+  document.getElementById('f-equip').value = getInfo('设施配置');
+  document.getElementById('f-use').value = getInfo('使用说明');
+  document.getElementById('f-risks').value = getInfo('风险类型') || p.risks || '';
+  document.getElementById('f-cause').value = getInfo('成因推断');
+  document.getElementById('f-incidents').value = getInfo('出险次数') || p.incidents || '';
+  document.getElementById('f-tips').value = p.warn || p.tips || '';
+  document.getElementById('form-title').textContent = '修改点位';
+  document.getElementById('submit-btn').textContent = '💾 保存修改';
+  document.getElementById('cancel-btn').style.display = '';
+  const bn = document.getElementById('edit-banner');
+  bn.textContent = `正在修改：${p.name}（${p.level}）—— 改完点「保存修改」生效`;
+  bn.style.display = 'block';
+  // 小地图同步显示被编辑点位
+  if(pickMap){
+    if(pickMarker) pickMap.removeLayer(pickMarker);
+    pickMarker = L.circleMarker([p.lat, p.lon], { radius:8, color:'#fff', weight:2,
+      fillColor:'#2563EB', fillOpacity:1 }).addTo(pickMap);
+    pickMap.setView([p.lat, p.lon], Math.max(pickMap.getZoom(), 15));
+  }
+  document.getElementById('f-name').scrollIntoView({ behavior:'smooth', block:'center' });
+}
+function cancelEdit(){
+  editingId = null;
+  clearForm();
+  document.getElementById('form-title').textContent = '添加点位';
+  document.getElementById('submit-btn').textContent = '＋ 添加点位';
+  document.getElementById('cancel-btn').style.display = 'none';
+  document.getElementById('edit-banner').style.display = 'none';
+}
+
+/* ============ 两步删除（第一次点击变为确认态，3秒内再点确认） ============ */
+function delPoint(btn, id){
+  if(!btn.classList.contains('arm')){
+    btn.classList.add('arm'); btn.textContent = '确认删除？';
+    setTimeout(() => { btn.classList.remove('arm'); btn.textContent = '删除'; }, 3000);
+    return;
+  }
+  const p = mergedPoints().find(q => q.id === id);
+  if(BASE_IDS.has(id)){
+    removed.add(id);
+    delete modified[id];
+  }else{
+    added = added.filter(q => q.id !== id);
+  }
+  if(editingId === id) cancelEdit();
+  render();
+}
+function resetAll(btn){
+  if(!btn.classList.contains('arm')){
+    btn.classList.add('arm'); btn.textContent = '确认还原？将清除全部增删改';
+    setTimeout(() => { btn.classList.remove('arm'); btn.textContent = '↺ 还原全部修改'; }, 3500);
+    return;
+  }
+  removed = new Set(); modified = {}; added = []; customLevels = [];
+  btn.classList.remove('arm'); btn.textContent = '↺ 还原全部修改';
+  refreshLevelSelects(); renderLevels();
+  cancelEdit(); render();
+}
+
+/* ============ 生成链接与二维码（只携带修改补丁，二维码小而清晰） ============ */
+function currentPatch(){
+  const patch = { bar:document.getElementById('bar-text').value.trim(),
+                  removed:[...removed], added:added };
+  if(Object.keys(modified).length) patch.modified = modified;
+  if(customLevels.length) patch.levels = customLevels;
+  return patch;
+}
+let qrDataURL = '';
+function genQR(){ makeQR(publicBase() + '#cfg=' + encodeCfg(currentPatch())); }
+function genFixedQR(){ makeQR(publicBase()); }   // 固定二维码：纯网址，永久有效
+function makeQR(url){
+  document.getElementById('new-link').textContent = url;
+  try{
+    const qr = qrcode(0, 'M');
+    qr.addData(url); qr.make();
+    const n = qr.getModuleCount(), cell = 8, margin = 4;
+    const size = (n + margin*2) * cell;
+    const cv = document.createElement('canvas');
+    cv.width = cv.height = size;
+    const ctx = cv.getContext('2d');
+    ctx.fillStyle = '#fff'; ctx.fillRect(0,0,size,size);
+    ctx.fillStyle = '#111827';
+    for(let r=0;r<n;r++) for(let c=0;c<n;c++)
+      if(qr.isDark(r,c)) ctx.fillRect((c+margin)*cell,(r+margin)*cell,cell,cell);
+    const box = document.getElementById('qr-box');
+    box.innerHTML = ''; box.appendChild(cv);
+    qrDataURL = cv.toDataURL('image/png');
+    document.getElementById('qr-area').style.display = 'block';
+    document.getElementById('qr-area').scrollIntoView({behavior:'smooth'});
+  }catch(e){
+    alert('二维码容量不足：新增点位过多或文字过长，请精简后重试');
+  }
+}
+function previewMap(){
+  window.open(publicBase() + '#cfg=' + encodeCfg(currentPatch()), '_blank');
+}
+function downloadQR(){
+  if(!qrDataURL) return;
+  // 美化打印版：标题 + 二维码 + 署名，A4 竖版比例，可直接打印张贴
+  const img = new Image();
+  img.onload = () => {
+    const W = 900, H = 1200;
+    const cv = document.createElement('canvas');
+    cv.width = W; cv.height = H;
+    const ctx = cv.getContext('2d');
+    ctx.fillStyle = '#fff'; ctx.fillRect(0, 0, W, H);
+    // ① 顶部红色标题条
+    ctx.fillStyle = '#B91C1C'; ctx.fillRect(0, 0, W, 128);
+    ctx.fillStyle = '#fff'; ctx.textAlign = 'center';
+    ctx.font = 'bold 46px "PingFang SC","Microsoft YaHei",sans-serif';
+    ctx.fillText('汉江老河口段防溺水警示图', W/2, 72);
+    ctx.font = '22px "PingFang SC","Microsoft YaHei",sans-serif';
+    ctx.fillStyle = '#FECACA';
+    ctx.fillText('华中科技大学2026暑期社会实践团队', W/2, 110);
+    // ② 二维码卡片（大留白）
+    ctx.fillStyle = '#F9FAFB';
+    ctx.beginPath();
+    if(ctx.roundRect) ctx.roundRect(120, 186, 660, 660, 18); else ctx.rect(120, 186, 660, 660);
+    ctx.fill();
+    ctx.strokeStyle = '#E5E7EB'; ctx.lineWidth = 2; ctx.stroke();
+    ctx.imageSmoothingEnabled = false;
+    ctx.drawImage(img, 150, 216, 600, 600);
+    // ③ 功能说明（主句 + 提示小字）
+    ctx.fillStyle = '#111827';
+    ctx.font = 'bold 29px "PingFang SC","Microsoft YaHei",sans-serif';
+    ctx.fillText('扫码查看危险水域 · 一键导航就近救生点位', W/2, 905);
+    ctx.fillStyle = '#6B7280';
+    ctx.font = '20px "PingFang SC","Microsoft YaHei",sans-serif';
+    ctx.fillText('部分手机需跳转浏览器打开网页', W/2, 958);
+    // ④ 应急提示（红色一行）
+    ctx.fillStyle = '#DC2626';
+    ctx.font = 'bold 27px "PingFang SC","Microsoft YaHei",sans-serif';
+    ctx.fillText('发现有人溺水：立即呼救并拨打 110 / 119', W/2, 1039);
+    // ⑤ 小字两行
+    ctx.fillStyle = '#6B7280';
+    ctx.font = '21px "PingFang SC","Microsoft YaHei",sans-serif';
+    ctx.fillText('切勿盲目下水施救 · 请爱护救生设施', W/2, 1102);
+    ctx.fillStyle = '#9CA3AF';
+    ctx.font = '17px "PingFang SC","Microsoft YaHei",sans-serif';
+    ctx.fillText('地图信息持续核实更新中 · 以现场警示标识为准', W/2, 1154);
+    const a = document.createElement('a');
+    a.href = cv.toDataURL('image/png');
+    a.download = '防溺水警示图_二维码_打印版.png';
+    a.click();
+  };
+  img.src = qrDataURL;
+}
+function copyAdminLink(){
+  const url = adminBase() + '#cfg=' + encodeCfg(currentPatch());
+  navigator.clipboard.writeText(url).then(
+    () => alert('已复制！下次打开此链接即可在现有点位基础上继续编辑'),
+    () => copyFallback('请手动复制后台续编链接', url));
+}
+
+/* ============ 数据备份：导出 / 导入 ============ */
+function exportData(){
+  const data = {
+    type: 'hanjiang-admin-backup', savedAt: new Date().toLocaleString(),
+    bar: document.getElementById('bar-text').value.trim(),
+    removed: [...removed], modified: modified, added: added, levels: customLevels,
+    stations: stations
+  };
+  const blob = new Blob([JSON.stringify(data, null, 2)], { type:'application/json' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = `防溺水点位备份_${new Date().toISOString().slice(0,10)}.json`;
+  a.click();
+  URL.revokeObjectURL(a.href);
+}
+function importData(input){
+  const file = input.files[0];
+  if(!file) return;
+  const reader = new FileReader();
+  reader.onload = () => {
+    try{
+      const d = JSON.parse(reader.result);
+      if(d.type !== 'hanjiang-admin-backup'){ alert('文件格式不对，请选择本系统导出的备份文件'); return; }
+      if(!confirm('导入将覆盖当前全部增删改与自定义分类，确认导入？')) return;
+      removed = new Set(d.removed || []);
+      modified = d.modified || {};
+      added = d.added || [];
+      customLevels = d.levels || [];
+      stations = (Array.isArray(d.stations) && d.stations.length) ? d.stations : JSON.parse(JSON.stringify(BASE_STATIONS));
+      barText = (d.bar !== undefined ? d.bar : DEFAULT_BAR);
+      refreshLevelSelects(); renderLevels(); renderStations(); cancelEdit(); render();
+      alert('导入成功！点击「生成新二维码」即可让公众地图生效');
+    }catch(e){ alert('文件读取失败：' + e.message); }
+  };
+  reader.readAsText(file);
+  input.value = '';
+}
+
+/* ============ 线上数据发布（GitHub 托管 data.json；发布后扫码即见，二维码不变） ============ */
+const GH_PATH = 'data.json';
+function loadGH(){
+  try{ return JSON.parse(localStorage.getItem('gh_cfg') || 'null'); }catch(e){ return null; }
+}
+function fillGHForm(){
+  const c = loadGH() || {};
+  document.getElementById('gh-owner').value = c.owner || '';
+  document.getElementById('gh-repo').value = c.repo || '';
+  document.getElementById('gh-branch').value = c.branch || 'main';
+  document.getElementById('gh-token').value = c.token || '';
+}
+function saveGH(){
+  const c = {
+    owner:  document.getElementById('gh-owner').value.trim(),
+    repo:   document.getElementById('gh-repo').value.trim(),
+    branch: document.getElementById('gh-branch').value.trim() || 'main',
+    token:  document.getElementById('gh-token').value.trim()
+  };
+  if(!c.owner || !c.repo){ alert('请填写 GitHub 用户名和仓库名'); return; }
+  localStorage.setItem('gh_cfg', JSON.stringify(c));
+  alert('配置已保存到本浏览器');
+}
+function ghHeaders(token){
+  return { 'Authorization':'Bearer ' + token, 'Accept':'application/vnd.github+json' };
+}
+async function fetchOnlineData(){
+  const c = loadGH();
+  if(!c || !c.owner || !c.repo){ alert('请先填写并保存 GitHub 配置'); return null; }
+  const bust = '_=' + Date.now();
+  const sources = [
+    { url:`https://api.github.com/repos/${c.owner}/${c.repo}/contents/${GH_PATH}?ref=${c.branch}&${bust}`,
+      headers:{ 'Accept':'application/vnd.github.raw+json' } },
+    { url:`https://cdn.jsdmirror.com/gh/${c.owner}/${c.repo}@${c.branch}/${GH_PATH}?${bust}` },
+    { url:`https://cdn.jsdelivr.net/gh/${c.owner}/${c.repo}@${c.branch}/${GH_PATH}?${bust}` }
+  ];
+  for(const s of sources){
+    try{
+      const r = await fetch(s.url, { headers: s.headers || {} });
+      if(!r.ok) continue;
+      const j = await r.json();
+      if(j && Array.isArray(j.points)) return j;
+    }catch(e){}
+  }
+  return null;
+}
+async function pullOnline(){
+  const j = await fetchOnlineData();
+  if(!j){ alert('拉取失败：请检查配置是否正确、仓库中是否已有 data.json'); return; }
+  // 将线上完整数据重建为编辑状态（增 / 删 / 改 / 自定义分类 / 提示条）
+  removed = new Set(); modified = {}; added = [];
+  const ids = new Set(j.points.map(p => p.id));
+  BASE_POINTS.forEach(b => { if(!ids.has(b.id)) removed.add(b.id); });
+  j.points.forEach(p => {
+    if(BASE_IDS.has(p.id)){
+      const b = BASE_POINTS.find(x => x.id === p.id);
+      if(JSON.stringify(b) !== JSON.stringify(p)) modified[p.id] = p;
+    }else{
+      added.push(p);
+    }
+  });
+  customLevels = Array.isArray(j.levels) ? j.levels : [];
+  stations = (Array.isArray(j.stations) && j.stations.length) ? j.stations : JSON.parse(JSON.stringify(BASE_STATIONS));
+  barText = (j.bar !== undefined ? j.bar : DEFAULT_BAR);
+  refreshLevelSelects(); renderLevels(); renderStations(); cancelEdit(); render();
+  alert('✅ 已拉取线上数据到编辑器');
+}
+async function publishOnline(){
+  const c = loadGH();
+  if(!c || !c.owner || !c.repo || !c.token){ alert('请先完整填写并保存 GitHub 配置（含 Token）'); return; }
+  if(!confirm(`确认发布到线上？\n\n发布后群众扫码将看到当前编辑的 ${mergedPoints().length} 个点位，二维码无需更换。`)) return;
+  const data = {
+    bar: document.getElementById('bar-text').value.trim(),
+    points: mergedPoints(),
+    levels: customLevels,
+    stations: stations
+  };
+  const api = `https://api.github.com/repos/${c.owner}/${c.repo}/contents/${GH_PATH}`;
+  try{
+    // 取当前文件 sha，并保留其中的 admin（口令等）字段，避免发布时覆盖
+    let sha, existingAdmin;
+    const r0 = await fetch(`${api}?ref=${c.branch}`, { headers: ghHeaders(c.token) });
+    if(r0.ok){
+      const j0 = await r0.json();
+      sha = j0.sha;
+      try{ existingAdmin = JSON.parse(decodeURIComponent(escape(atob(j0.content.replace(/\n/g,''))))).admin; }catch(e){}
+    }
+    if(existingAdmin) data.admin = existingAdmin;
+    const content = btoa(unescape(encodeURIComponent(JSON.stringify(data, null, 2))));
+    const body = { message:'更新防溺水点位数据 ' + new Date().toLocaleString(), content, branch:c.branch };
+    if(sha) body.sha = sha;
+    const r1 = await fetch(api, { method:'PUT', headers: ghHeaders(c.token), body: JSON.stringify(body) });
+    if(!r1.ok){
+      const t = await r1.text();
+      alert('发布失败（' + r1.status + '）：' + t.slice(0, 300));
+      return;
+    }
+    // 刷新 jsDelivr CDN 缓存（备用通道也能立刻拿到新数据）
+    fetch(`https://purge.jsdelivr.net/gh/${c.owner}/${c.repo}@${c.branch}/${GH_PATH}`).catch(() => {});
+    alert('🎉 发布成功！群众扫码或刷新页面即可看到最新地图，二维码无需更换。');
+  }catch(e){
+    alert('发布出错：' + e.message);
+  }
+}
+
+/* ============ 修改后台口令（需维护密码；新校验值写入 data.json，全平台即时生效） ============ */
+async function changePass(){
+  if(!await verifyMaint()) return;
+  const c = loadGH();
+  if(!c || !c.token){ alert('修改口令需要发布令牌（Token），请先在上方配置区填写并保存'); return; }
+  const oldP = await pwPrompt('🔑 修改后台口令', '第 1 步 / 共 3 步\n请输入当前后台口令：');
+  if(oldP === null) return;
+  if(await sha256(oldP) !== await currentPassHash()){ alert('当前口令错误'); return; }
+  const p1 = await pwPrompt('🔑 修改后台口令', '第 2 步 / 共 3 步\n请输入新口令（建议 6 位以上，字母+数字）：');
+  if(p1 === null) return;
+  if(p1.length < 4){ alert('新口令太短（至少4位），已取消'); return; }
+  const p2 = await pwPrompt('🔑 修改后台口令', '第 3 步 / 共 3 步\n请再输入一遍新口令：');
+  if(p1 !== p2){ alert('两次输入不一致，已取消'); return; }
+  try{
+    const api = `https://api.github.com/repos/${c.owner}/${c.repo}/contents/${GH_PATH}`;
+    const r0 = await fetch(`${api}?ref=${c.branch}`, { headers: ghHeaders(c.token) });
+    if(!r0.ok){ alert('读取线上数据失败（' + r0.status + '）'); return; }
+    const j0 = await r0.json();
+    const cur = JSON.parse(decodeURIComponent(escape(atob(j0.content.replace(/\n/g,'')))));
+    cur.admin = Object.assign({}, cur.admin, { passHash: await sha256(p1) });
+    const content = btoa(unescape(encodeURIComponent(JSON.stringify(cur, null, 2))));
+    const r1 = await fetch(api, { method:'PUT', headers: ghHeaders(c.token),
+      body: JSON.stringify({ message:'修改后台口令', content, branch:c.branch, sha:j0.sha }) });
+    if(!r1.ok){ alert('修改失败（' + r1.status + '）：' + (await r1.text()).slice(0,200)); return; }
+    _passHashCache = null; _rawCache = null;
+    alert('✅ 口令修改成功！\n下次打开后台请使用新口令，请立即通知其他管理人员。\n（旧口令已作废）');
+  }catch(e){ alert('修改出错：' + e.message); }
+}
+
+/* ============ 修改维护密码（需先验证当前维护密码；仅实践队掌握） ============ */
+async function changeMaintPass(){
+  const oldH = await currentMaintHash();
+  const oldP = await pwPrompt('🔑 修改维护密码', '第 1 步 / 共 3 步\n请输入当前维护密码：');
+  if(oldP === null) return;
+  if(await sha256(oldP) !== oldH){ alert('当前维护密码错误'); return; }
+  const c = loadGH();
+  if(!c || !c.token){ alert('修改维护密码需要发布令牌（Token），请先在上方配置区填写并保存'); return; }
+  const p1 = await pwPrompt('🔑 修改维护密码', '第 2 步 / 共 3 步\n请输入新维护密码（至少4位，仅实践队掌握）：');
+  if(p1 === null) return;
+  if(p1.length < 4){ alert('新维护密码太短，已取消'); return; }
+  const p2 = await pwPrompt('🔑 修改维护密码', '第 3 步 / 共 3 步\n请再输入一遍新维护密码：');
+  if(p1 !== p2){ alert('两次输入不一致，已取消'); return; }
+  try{
+    const api = `https://api.github.com/repos/${c.owner}/${c.repo}/contents/${GH_PATH}`;
+    const r0 = await fetch(`${api}?ref=${c.branch}`, { headers: ghHeaders(c.token) });
+    if(!r0.ok){ alert('读取线上数据失败（' + r0.status + '）'); return; }
+    const j0 = await r0.json();
+    const cur = JSON.parse(decodeURIComponent(escape(atob(j0.content.replace(/\n/g,'')))));
+    cur.admin = Object.assign({}, cur.admin, { maintHash: await sha256(p1) });
+    const content = btoa(unescape(encodeURIComponent(JSON.stringify(cur, null, 2))));
+    const r1 = await fetch(api, { method:'PUT', headers: ghHeaders(c.token),
+      body: JSON.stringify({ message:'修改维护密码', content, branch:c.branch, sha:j0.sha }) });
+    if(!r1.ok){ alert('修改失败（' + r1.status + '）'); return; }
+    _maintHashCache = null; _maintOk = false; _rawCache = null;
+    alert('✅ 维护密码修改成功！\n请务必记录新密码并仅告知实践队核心成员。');
+  }catch(e){ alert('修改出错：' + e.message); }
+}
+
+/* ============ 系统维护助手（一键接入 Kimi 协助优化系统） ============ */
+const MAINT_PROMPT =
+`你是「汉江老河口段防溺水警示系统」的维护助手，请先理解以下系统档案，再帮我完成需求。
+
+【系统构成】两个纯前端静态网页（无后端）：
+- index.html：公众地图。Leaflet 1.9.4 + 高德瓦片（GCJ-02坐标），点位晕染圈+脉冲标记+弹窗，浏览器定位（WGS84转GCJ-02纠偏）后显示到最近救生点的虚线和高德导航。
+- admin.html：点位后台。口令登录（SHA-256校验，校验值存在 data.json 的 admin.passHash 字段，后台可改口令），点位增删改、自定义分类（名称+颜色）、小地图点选坐标、数据导入导出、固定/预览二维码生成（qrcode-generator库）。
+
+【数据流】点位数据托管在 GitHub 仓库 2598027012/hanjiang-map-data 的 data.json（公开仓库）。
+- 读：index.html 打开时 fetch 远程数据（api.github.com 实时通道 → jsDelivr CDN 备用通道 → 内置数据兜底），也支持网址 #cfg=Base64补丁 预览。
+- 写：admin.html 用 GitHub Contents API（Bearer Token）PUT 更新 data.json，发布后群众扫码即见，二维码固定不变。
+
+【数据格式】data.json = { bar:顶部提示条, points:[{id,name,level,lon,lat,info:[[键,值]...],warn}], levels:[{name,color}]（自定义分类，可空）, admin:{passHash} }。
+内置分类：高危水域/中危水域/低危水域/救生点/陡坡深水/水文风险；蓝天救援队与水上急救站写死在 index.html 的 STATIONS。
+
+【我的需求】（请在理解上述架构后，直接给出完整可用的修改方案/代码）：
+`;
+function copyMaintPrompt(){
+  const text = MAINT_PROMPT + '\n（如需修改代码：请实践队维护同学用后台「⬇ 下载系统源码」拿到 index.html 和 admin.html，与本提示词一起发给 AI）\n';
+  navigator.clipboard.writeText(text).then(
+    () => alert('✅ 系统说明已复制！\n\n下一步：打开 Kimi 等 AI 助手 → 粘贴 → 接着输入你的问题，例如：\n· "我怎么添加一个点位？"\n· "发布失败显示401怎么办？"\n· "怎么修改顶部提示条？"'),
+    () => copyFallback('复制失败，请手动复制', text));
+}
+async function downloadSource(){
+  if(!await verifyMaint()) return;
+  for(const f of ['index.html', 'admin.html']){
+    try{
+      const url = location.origin + location.pathname.replace(/admin\.html$/, f);
+      const t = await (await fetch(url)).text();
+      const a = document.createElement('a');
+      a.href = URL.createObjectURL(new Blob([t], { type:'text/html' }));
+      a.download = f; a.click();
+      await new Promise(r => setTimeout(r, 400));
+    }catch(e){ alert(f + ' 下载失败：' + e.message); }
+  }
+}
+
+/* ============ 小地图点选坐标（GCJ-02 高德底图，与点位坐标系一致） ============ */
+let pickMap = null, pickMarker = null, pickPtsLayer = null;
+function initPickMap(){
+  pickMap = L.map('pick-map', { zoomControl:true, minZoom:12, maxZoom:18, attributionControl:false });
+  const allLL = BASE_POINTS.map(p => [p.lat, p.lon]);
+  pickMap.fitBounds(L.latLngBounds(allLL).pad(0.3));
+  // 双底图：标准图 / 卫星图（与公众地图页一致的高德卫星影像+路网标注）
+  const stdLayer = L.tileLayer('https://webrd0{s}.is.autonavi.com/appmaptile?lang=zh_cn&size=1&scale=1&style=8&x={x}&y={y}&z={z}',
+    { subdomains:['1','2','3','4'], maxZoom:18 });
+  const satLayer = L.layerGroup([
+    L.tileLayer('https://webst0{s}.is.autonavi.com/appmaptile?style=6&x={x}&y={y}&z={z}',
+      { subdomains:['1','2','3','4'], maxZoom:18 }),
+    L.tileLayer('https://webst0{s}.is.autonavi.com/appmaptile?style=8&x={x}&y={y}&z={z}',
+      { subdomains:['1','2','3','4'], maxZoom:18 })
+  ]);
+  stdLayer.addTo(pickMap);
+  L.control.layers({ '标准图': stdLayer, '卫星图': satLayer }, null,
+    { position:'topright', collapsed:false }).addTo(pickMap);
+  // 点位层独立成组，随点位增删改实时刷新
+  pickPtsLayer = L.layerGroup().addTo(pickMap);
+  refreshPickPoints();
+  pickMap.on('click', e => {
+    document.getElementById('f-lon').value = e.latlng.lng.toFixed(6);
+    document.getElementById('f-lat').value = e.latlng.lat.toFixed(6);
+    if(pickMarker) pickMap.removeLayer(pickMarker);
+    pickMarker = L.circleMarker(e.latlng, { radius:8, color:'#fff', weight:2,
+      fillColor:'#2563EB', fillOpacity:1 }).addTo(pickMap);
+  });
+}
+// 小地图点位与"当前点位"表保持同步（新增/修改/删除/恢复默认/拉取线上后都会刷新）
+function refreshPickPoints(){
+  if(!pickMap || !pickPtsLayer) return;
+  pickPtsLayer.clearLayers();
+  mergedPoints().forEach(p => {
+    L.circleMarker([p.lat, p.lon], { radius:4, color:levelColor(p.level), weight:2,
+      fillColor:levelColor(p.level), fillOpacity:.6 }).addTo(pickPtsLayer)
+      .bindTooltip(`${p.name}（${p.level}）`);
+  });
+}
+
+/* ============ 移除平台注入的 "Kimi Agent" 标识（与公众地图页一致） ============ */
+function removeKimiBadge(){
+  document.querySelectorAll('a[href*="kimi.com"], iframe[src*="kimi.com"]').forEach(e => e.remove());
+  document.querySelectorAll('body *').forEach(e => {
+    if (e.childElementCount === 0 && e.textContent.trim() === 'Kimi Agent') {
+      let p = e;
+      for (let i = 0; i < 5 && p.parentElement && p.parentElement !== document.body; i++) p = p.parentElement;
+      p.remove();
+    }
+  });
+}
+removeKimiBadge();
+setInterval(removeKimiBadge, 500);
+new MutationObserver(muts => {
+  for(const m of muts) for(const n of m.addedNodes){
+    if(n.nodeType===1 && (n.tagName==='A' || n.tagName==='IFRAME')){ removeKimiBadge(); return; }
+  }
+}).observe(document.body, { childList:true, subtree:true });
+
+/* 页面初始化在 gate() 口令验证通过后执行（见文件头部 gate 函数） */
+</script>
+
+
+</body></html>
