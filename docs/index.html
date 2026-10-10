@@ -1,0 +1,529 @@
+<!DOCTYPE html><html lang="zh-CN"><head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"/>
+<title>华中科技大学暑期社会实践</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%23B91C1C'/%3E%3Ctext x='32' y='45' font-size='38' text-anchor='middle' fill='white' font-family='sans-serif' font-weight='bold'%3E救%3C/text%3E%3C/svg%3E"/>
+<link rel="manifest" href="https://cdn.jsdelivr.net/gh/2598027012/hanjiang-map-data@main/icons/manifest-map.json"/>
+<!-- 多尺寸 PNG 图标：安卓各品牌自带浏览器创建桌面快捷方式时取用（SVG 图标多数老浏览器不认） -->
+<link rel="icon" type="image/png" sizes="192x192" href="https://cdn.jsdelivr.net/gh/2598027012/hanjiang-map-data@main/icons/map-192.png"/>
+<link rel="icon" type="image/png" sizes="512x512" href="https://cdn.jsdelivr.net/gh/2598027012/hanjiang-map-data@main/icons/map-512.png"/>
+<link rel="shortcut icon" href="https://cdn.jsdelivr.net/gh/2598027012/hanjiang-map-data@main/icons/map-192.png"/>
+<link rel="apple-touch-icon" href="https://cdn.jsdelivr.net/gh/2598027012/hanjiang-map-data@main/icons/map-180.png"/>
+<link rel="apple-touch-icon" sizes="180x180" href="https://cdn.jsdelivr.net/gh/2598027012/hanjiang-map-data@main/icons/map-180.png"/>
+<meta name="theme-color" content="#B91C1C"/>
+<meta name="mobile-web-app-capable" content="yes"/>
+<meta name="application-name" content="防溺水地图"/>
+<meta name="apple-mobile-web-app-capable" content="yes"/>
+<meta name="apple-mobile-web-app-status-bar-style" content="default"/>
+<meta name="apple-mobile-web-app-title" content="防溺水地图"/>
+<link rel="stylesheet" href="https://cdn.jsdmirror.com/npm/leaflet@1.9.4/dist/leaflet.css"/>
+<script src="https://cdn.jsdmirror.com/npm/leaflet@1.9.4/dist/leaflet.js"></script>
+<style>
+  * { margin:0; padding:0; box-sizing:border-box; }
+  html,body { height:100%; font-family:"PingFang SC","Microsoft YaHei",sans-serif; }
+  #header {
+    background:#B91C1C; color:#fff; text-align:center; padding:10px 8px 8px;
+    position:relative; z-index:1000; box-shadow:0 2px 8px rgba(0,0,0,.25);
+  }
+  #header h1 { font-size:19px; letter-spacing:1px; }
+  #header p  { font-size:12px; color:#FECACA; margin-top:3px; }
+  #demo-bar {
+    background:#FEF3C7; color:#92400E; font-size:12px; text-align:center;
+    padding:4px 8px; position:relative; z-index:1000;
+  }
+  #map { height:calc(100% - 118px); }
+  .pulse-wrap { background:transparent; border:none; }
+  .pulse {
+    width:30px; height:30px; border-radius:50%;
+    background:var(--c); border:3px solid #fff;
+    box-shadow:0 0 6px rgba(0,0,0,.5);
+    color:#fff; font-weight:700; font-size:17px; line-height:24px; text-align:center;
+    position:relative;
+  }
+  .pulse::after {
+    content:""; position:absolute; inset:-10px; border-radius:50%;
+    border:3px solid var(--c); opacity:.7; animation:ripple 1.8s ease-out infinite;
+  }
+  @keyframes ripple {
+    0%   { transform:scale(.6); opacity:.8; }
+    100% { transform:scale(1.5); opacity:0; }
+  }
+  .risk-popup .leaflet-popup-content-wrapper { border-radius:12px; }
+  .risk-popup .leaflet-popup-content { font-size:14px; line-height:1.8; margin:14px 16px; min-width:210px; }
+  .badge {
+    display:inline-block; color:#fff; font-weight:700; font-size:15px;
+    border-radius:8px; padding:2px 12px; margin-bottom:6px;
+  }
+  .row { color:#1F2937; }
+  .row .k { color:#6B7280; }
+  .warn-line { color:#B91C1C; font-weight:600; }
+  .locate-btn {
+    background:#fff; border-radius:8px; box-shadow:0 1px 6px rgba(0,0,0,.35);
+    width:44px; height:44px; text-align:center; line-height:44px;
+    font-size:22px; cursor:pointer; margin-right:10px;
+  }
+  .legend {
+    background:rgba(255,255,255,.92); border-radius:10px; padding:8px 12px;
+    font-size:12px; line-height:1.9; box-shadow:0 1px 6px rgba(0,0,0,.3); color:#374151;
+  }
+  .legend .dot { display:inline-block; width:11px; height:11px; border-radius:50%; margin-right:6px; }
+  .legend .lg-head { font-weight:700; cursor:pointer; user-select:none; color:#7F1D1D; }
+  .legend.closed .lg-body { display:none; }
+  .legend.closed { padding:5px 12px; }
+  /* 兼容老式安卓浏览器：不用 gap/transform/calc，用最基础的 flex 布局 */
+  /* 底部错峰布局：卡片出现时图例与"管理"按钮自动上移，互不遮挡 */
+  #nav-card {
+    position:fixed; bottom:38px; left:10px; right:10px;
+    z-index:1100; display:none; /* JS 通过 .show 类显示（兼容老式安卓浏览器） */
+    background:rgba(255,255,255,.97); border:2px solid #2563EB; border-radius:12px;
+    padding:6px 8px 6px 12px; box-shadow:0 3px 14px rgba(0,0,0,.25);
+    font-size:13px; color:#1F2937;
+  }
+  #nav-card.show { display:-webkit-box; display:-webkit-flex; display:flex; -webkit-box-align:center; -webkit-align-items:center; align-items:center; }
+  #nav-card > div {
+    -webkit-box-flex:1; -webkit-flex:1 1 auto; flex:1 1 auto; min-width:0;
+    white-space:nowrap; overflow:hidden; text-overflow:ellipsis; line-height:1.45;
+  }
+  #nav-card b { color:#2563EB; }
+  #nc-dist { color:#B91C1C; font-weight:700; margin-left:4px; }
+  #nc-go {
+    background:#2563EB; color:#fff; text-decoration:none; font-weight:700;
+    border-radius:10px; padding:7px 13px; font-size:13px;
+    -webkit-flex-shrink:0; flex-shrink:0; white-space:nowrap; margin-left:8px;
+  }
+  #nc-close {
+    -webkit-flex-shrink:0; flex-shrink:0; margin-left:4px; padding:4px 7px;
+    color:#9CA3AF; font-size:14px; cursor:pointer;
+  }
+  #toast {
+    position:fixed; top:150px; left:50%; transform:translateX(-50%);
+    z-index:1200; display:none; background:rgba(17,24,39,.88); color:#fff;
+    border-radius:10px; padding:10px 18px; font-size:13px; max-width:86vw; text-align:center;
+  }
+  #footer {
+    position:fixed; bottom:0; left:0; right:0; z-index:1000;
+    background:#7F1D1D; color:#FCA5A5; text-align:center;
+    font-size:12px; padding:6px 4px; line-height:1.35;
+  }
+  #footer b { color:#fff; font-size:13px; }
+  #admin-link {
+    position:fixed; left:12px; bottom:56px; z-index:1000;
+    background:rgba(255,255,255,.92); color:#1E293B; text-decoration:none;
+    border-radius:20px; padding:6px 14px; font-size:13px; font-weight:600;
+    box-shadow:0 1px 6px rgba(0,0,0,.28); opacity:.85;
+  }
+  /* 导航卡片出现时：左下角元素整体上移让位（老式浏览器兼容：纯类切换，无 calc/var） */
+  body.nav-on #admin-link { bottom:94px; }
+  .leaflet-bottom .leaflet-control-scale { margin-bottom:34px; }
+  .leaflet-bottom .legend { margin-bottom:34px; }
+  body.nav-on .leaflet-bottom .legend { margin-bottom:92px; }
+  body.nav-on .leaflet-bottom .leaflet-control-scale { display:none; }
+  a[href*="kimi.com/agent"], iframe[src*="kimi.com"] { display:none !important; }
+</style>
+<script src="https://www.kimi.com/sdk-seed.js" defer=""></script></head>
+<body>
+<div id="header">
+  <h1>汉江老河口段防溺水警示图</h1>
+  <p>点击彩色标记查看点位详情 · 双指可缩放地图</p>
+</div>
+<div id="demo-bar"></div>
+<div id="map"></div>
+<div id="nav-card">
+  <div>🛟 最近：<b id="nc-name"></b><span id="nc-dist"></span></div>
+  <a href="#" id="nc-go" rel="noopener" target="_blank">🧭 导航</a>
+  <span id="nc-close">✕</span>
+</div>
+<div id="toast"></div>
+<a id="admin-link" href="admin.html">⚙ 管理</a>
+<div id="footer">发现溺水：立即呼救并拨打 <b>110 / 119</b> · 切勿盲目下水施救</div>
+
+<script>
+/* ================= ★ 数据配置区（内置默认；优先级低于二维码链接中的配置） ================= */
+// 点位为2026年暑期实地勘探实测（奥维互动地图 GCJ-02 坐标）
+const BUILTIN_CFG = {
+  bar: "⚠ 点位为实地勘探实测，信息持续核实更新中",
+  points: [
+    {"id": "01", "name": "救生设施投放点 01", "level": "救生点", "lon": 111.662394, "lat": 32.380152, "info": [["点位编号", "01"], ["设施配置", "救生圈、救生绳、救生杆，以现场实物为准"], ["使用说明", "紧急情况下免费取用，用后请放回原位"]], "warn": "非紧急情况请勿挪用救生设施"},
+    {"id": "02", "name": "救生设施投放点 02", "level": "救生点", "lon": 111.663335, "lat": 32.38187, "info": [["点位编号", "02"], ["设施配置", "救生圈、救生绳、救生杆，以现场实物为准"], ["使用说明", "紧急情况下免费取用，用后请放回原位"]], "warn": "非紧急情况请勿挪用救生设施"},
+    {"id": "03", "name": "救生设施投放点 03", "level": "救生点", "lon": 111.664484, "lat": 32.383417, "info": [["点位编号", "03"], ["设施配置", "救生圈、救生绳、救生杆，以现场实物为准"], ["使用说明", "紧急情况下免费取用，用后请放回原位"]], "warn": "非紧急情况请勿挪用救生设施"},
+    {"id": "04", "name": "救生设施投放点 04", "level": "救生点", "lon": 111.667091, "lat": 32.386155, "info": [["点位编号", "04"], ["设施配置", "救生圈、救生绳、救生杆，以现场实物为准"], ["使用说明", "紧急情况下免费取用，用后请放回原位"]], "warn": "非紧急情况请勿挪用救生设施"},
+    {"id": "05", "name": "救生设施投放点 05", "level": "救生点", "lon": 111.668824, "lat": 32.387742, "info": [["点位编号", "05"], ["设施配置", "救生圈、救生绳、救生杆，以现场实物为准"], ["使用说明", "紧急情况下免费取用，用后请放回原位"]], "warn": "非紧急情况请勿挪用救生设施"},
+    {"id": "06", "name": "救生设施投放点 06", "level": "救生点", "lon": 111.671569, "lat": 32.38978, "info": [["点位编号", "06"], ["设施配置", "救生圈、救生绳、救生杆，以现场实物为准"], ["使用说明", "紧急情况下免费取用，用后请放回原位"]], "warn": "非紧急情况请勿挪用救生设施"},
+    {"id": "07", "name": "救生设施投放点 07", "level": "救生点", "lon": 111.672509, "lat": 32.390286, "info": [["点位编号", "07"], ["设施配置", "救生圈、救生绳、救生杆，以现场实物为准"], ["使用说明", "紧急情况下免费取用，用后请放回原位"]], "warn": "非紧急情况请勿挪用救生设施"},
+    {"id": "08", "name": "救生设施投放点 08", "level": "救生点", "lon": 111.676043, "lat": 32.39258, "info": [["点位编号", "08"], ["设施配置", "救生圈、救生绳、救生杆，以现场实物为准"], ["使用说明", "紧急情况下免费取用，用后请放回原位"]], "warn": "非紧急情况请勿挪用救生设施"},
+    {"id": "09", "name": "救生设施投放点 09", "level": "救生点", "lon": 111.681148, "lat": 32.399996, "info": [["点位编号", "09"], ["设施配置", "救生圈、救生绳、救生杆，以现场实物为准"], ["使用说明", "紧急情况下免费取用，用后请放回原位"]], "warn": "非紧急情况请勿挪用救生设施"},
+    {"id": "10", "name": "救生设施投放点 10", "level": "救生点", "lon": 111.680399, "lat": 32.401516, "info": [["点位编号", "10"], ["设施配置", "救生圈、救生绳、救生杆，以现场实物为准"], ["使用说明", "紧急情况下免费取用，用后请放回原位"]], "warn": "非紧急情况请勿挪用救生设施"},
+    {"id": "11", "name": "救生设施投放点 11", "level": "救生点", "lon": 111.679202, "lat": 32.402686, "info": [["点位编号", "11"], ["设施配置", "救生圈、救生绳、救生杆，以现场实物为准"], ["使用说明", "紧急情况下免费取用，用后请放回原位"]], "warn": "非紧急情况请勿挪用救生设施"},
+    {"id": "12", "name": "救生设施投放点 12", "level": "救生点", "lon": 111.678828, "lat": 32.40307, "info": [["点位编号", "12"], ["设施配置", "救生圈、救生绳、救生杆，以现场实物为准"], ["使用说明", "紧急情况下免费取用，用后请放回原位"]], "warn": "非紧急情况请勿挪用救生设施"},
+    {"id": "13", "name": "救生设施投放点 13", "level": "救生点", "lon": 111.675843, "lat": 32.406032, "info": [["点位编号", "13"], ["设施配置", "救生圈、救生绳、救生杆，以现场实物为准"], ["使用说明", "紧急情况下免费取用，用后请放回原位"]], "warn": "非紧急情况请勿挪用救生设施"},
+    {"id": "w1", "name": "弯道深槽·漩涡易发区", "level": "水文风险", "lon": 111.67, "lat": 32.4078, "info": [["风险类型", "弯道环流、凹岸深槽、回流漩涡"], ["成因推断", "汉江弯道顶冲段，主流贴岸、水深流急"]], "warn": "严禁下水游泳、捕捞，行船注意避让"},
+    {"id": "w2", "name": "江心洲滩·紊流暗流区", "level": "水文风险", "lon": 111.6645, "lat": 32.3905, "info": [["风险类型", "洲滩分流绕流、暗流紊乱、水下沙丘陡坎"], ["成因推断", "江心洲滩使水流分叉交汇，水下地形复杂多变"]], "warn": "切勿蹚水前往洲滩，周边水下深浅突变"},
+    {"id": "w3", "name": "桥墩紊流·漩涡区", "level": "水文风险", "lon": 111.6587, "lat": 32.3811, "info": [["风险类型", "桥墩绕流漩涡、局部冲刷深坑"], ["成因推断", "光化汉江大桥桥墩扰动水流，桥区局部冲刷加深"]], "warn": "严禁在桥区水域游泳、垂钓、戏水"},
+    {"id": "w4", "name": "闸坝调度·水位骤变警示区", "level": "水文风险", "lon": 111.6575, "lat": 32.374, "info": [["风险类型", "水位骤涨骤落、流速突然增大"], ["成因推断", "下游约3公里为王甫洲水利枢纽，23孔泄水闸，泄洪与发电调度可致本段水位、流速骤变"]], "warn": "听到警报或见水位快速上涨，立即撤离岸边"},
+    {"id": "14", "name": "陡坡危险点：水深危险！", "level": "陡坡深水", "lon": 111.675616, "lat": 32.40577, "info": [["点位编号", "14"], ["风险类型", "岸坡陡峭、入水即深水、坡面湿滑易坠跌"]], "warn": "严禁下水游泳、戏水、垂钓，请勿靠近岸边湿滑区域"},
+    {"id": "15", "name": "陡坡危险点：水深危险！", "level": "陡坡深水", "lon": 111.679241, "lat": 32.402245, "info": [["点位编号", "15"], ["风险类型", "岸坡陡峭、入水即深水、坡面湿滑易坠跌"]], "warn": "严禁下水游泳、戏水、垂钓，请勿靠近岸边湿滑区域"},
+    {"id": "16", "name": "陡坡危险点：水深危险！", "level": "陡坡深水", "lon": 111.680848, "lat": 32.399904, "info": [["点位编号", "16"], ["风险类型", "岸坡陡峭、入水即深水、坡面湿滑易坠跌"]], "warn": "严禁下水游泳、戏水、垂钓，请勿靠近岸边湿滑区域"},
+    {"id": "17", "name": "陡坡危险点：水深危险！", "level": "陡坡深水", "lon": 111.679958, "lat": 32.397634, "info": [["点位编号", "17"], ["风险类型", "岸坡陡峭、入水即深水、坡面湿滑易坠跌"]], "warn": "严禁下水游泳、戏水、垂钓，请勿靠近岸边湿滑区域"},
+    {"id": "18", "name": "陡坡危险点：水深危险！", "level": "陡坡深水", "lon": 111.678391, "lat": 32.395515, "info": [["点位编号", "18"], ["风险类型", "岸坡陡峭、入水即深水、坡面湿滑易坠跌"]], "warn": "严禁下水游泳、戏水、垂钓，请勿靠近岸边湿滑区域"},
+    {"id": "19", "name": "陡坡危险点：水深危险！", "level": "陡坡深水", "lon": 111.677588, "lat": 32.394083, "info": [["点位编号", "19"], ["风险类型", "岸坡陡峭、入水即深水、坡面湿滑易坠跌"]], "warn": "严禁下水游泳、戏水、垂钓，请勿靠近岸边湿滑区域"},
+    {"id": "20", "name": "陡坡危险点：水深危险！", "level": "陡坡深水", "lon": 111.676967, "lat": 32.39338, "info": [["点位编号", "20"], ["风险类型", "岸坡陡峭、入水即深水、坡面湿滑易坠跌"]], "warn": "严禁下水游泳、戏水、垂钓，请勿靠近岸边湿滑区域"},
+    {"id": "21", "name": "陡坡危险点：水深危险！", "level": "陡坡深水", "lon": 111.675722, "lat": 32.392437, "info": [["点位编号", "21"], ["风险类型", "岸坡陡峭、入水即深水、坡面湿滑易坠跌"]], "warn": "严禁下水游泳、戏水、垂钓，请勿靠近岸边湿滑区域"},
+    {"id": "22", "name": "陡坡危险点：水深危险！", "level": "陡坡深水", "lon": 111.67559, "lat": 32.39236, "info": [["点位编号", "22"], ["风险类型", "岸坡陡峭、入水即深水、坡面湿滑易坠跌"]], "warn": "严禁下水游泳、戏水、垂钓，请勿靠近岸边湿滑区域"},
+    {"id": "23", "name": "陡坡危险点：水深危险！", "level": "陡坡深水", "lon": 111.670098, "lat": 32.388803, "info": [["点位编号", "23"], ["风险类型", "岸坡陡峭、入水即深水、坡面湿滑易坠跌"]], "warn": "严禁下水游泳、戏水、垂钓，请勿靠近岸边湿滑区域"},
+    {"id": "24", "name": "陡坡危险点：水深危险！", "level": "陡坡深水", "lon": 111.669176, "lat": 32.388119, "info": [["点位编号", "24"], ["风险类型", "岸坡陡峭、入水即深水、坡面湿滑易坠跌"]], "warn": "严禁下水游泳、戏水、垂钓，请勿靠近岸边湿滑区域"},
+    {"id": "25", "name": "陡坡危险点：水深危险！", "level": "陡坡深水", "lon": 111.668718, "lat": 32.3878, "info": [["点位编号", "25"], ["风险类型", "岸坡陡峭、入水即深水、坡面湿滑易坠跌"]], "warn": "严禁下水游泳、戏水、垂钓，请勿靠近岸边湿滑区域"},
+    {"id": "26", "name": "陡坡危险点：水深危险！", "level": "陡坡深水", "lon": 111.667971, "lat": 32.387164, "info": [["点位编号", "26"], ["风险类型", "岸坡陡峭、入水即深水、坡面湿滑易坠跌"]], "warn": "严禁下水游泳、戏水、垂钓，请勿靠近岸边湿滑区域"},
+    {"id": "27", "name": "陡坡危险点：水深危险！", "level": "陡坡深水", "lon": 111.667661, "lat": 32.386855, "info": [["点位编号", "27"], ["风险类型", "岸坡陡峭、入水即深水、坡面湿滑易坠跌"]], "warn": "严禁下水游泳、戏水、垂钓，请勿靠近岸边湿滑区域"},
+    {"id": "28", "name": "陡坡危险点：水深危险！", "level": "陡坡深水", "lon": 111.667012, "lat": 32.386219, "info": [["点位编号", "28"], ["风险类型", "岸坡陡峭、入水即深水、坡面湿滑易坠跌"]], "warn": "严禁下水游泳、戏水、垂钓，请勿靠近岸边湿滑区域"},
+    {"id": "29", "name": "陡坡危险点：水深危险！", "level": "陡坡深水", "lon": 111.664417, "lat": 32.383462, "info": [["点位编号", "29"], ["风险类型", "岸坡陡峭、入水即深水、坡面湿滑易坠跌"]], "warn": "严禁下水游泳、戏水、垂钓，请勿靠近岸边湿滑区域"},
+    {"id": "30", "name": "陡坡危险点：水深危险！", "level": "陡坡深水", "lon": 111.664138, "lat": 32.383119, "info": [["点位编号", "30"], ["风险类型", "岸坡陡峭、入水即深水、坡面湿滑易坠跌"]], "warn": "严禁下水游泳、戏水、垂钓，请勿靠近岸边湿滑区域"},
+    {"id": "31", "name": "陡坡危险点：水深危险！", "level": "陡坡深水", "lon": 111.661547, "lat": 32.379032, "info": [["点位编号", "31"], ["风险类型", "岸坡陡峭、入水即深水、坡面湿滑易坠跌"]], "warn": "严禁下水游泳、戏水、垂钓，请勿靠近岸边湿滑区域"},
+    {"id": "32", "name": "陡坡危险点：水深危险！", "level": "陡坡深水", "lon": 111.661178, "lat": 32.378087, "info": [["点位编号", "32"], ["风险类型", "岸坡陡峭、入水即深水、坡面湿滑易坠跌"]], "warn": "严禁下水游泳、戏水、垂钓，请勿靠近岸边湿滑区域"}
+  ]
+};
+// 蓝天救援队 + 水上急救站（GCJ-02坐标；内置兜底值，线上 data.json 的 stations 字段可覆盖）
+// 字段：name/lon/lat/color/icon + contact(联系人)/phone(电话)/note(备注)，空值字段弹窗自动隐藏
+const BUILTIN_STATIONS = [
+  { name:"蓝天救援队", lon:111.660957, lat:32.376996, color:"#2563EB", icon:"救",
+    contact:"陈森", phone:"13995780307", note:"" },
+  { name:"水上急救站", lon:111.660962, lat:32.377628, color:"#E11D48", icon:"✚",
+    contact:"", phone:"", note:"" }
+];
+/* ====================================================================================== */
+
+// ---- 读取二维码链接中的配置（#cfg=...，由后台管理程序生成；兼容 ?cfg= 调试） ----
+// 支持两种格式：
+//   ① 补丁格式（新，二维码内容小）：{bar, removed:[点位id...], added:[新点位...], modified:{id:点位...}}，在内置点位基础上增删改
+//   ② 完整格式（旧，向后兼容）：{bar, points:[...]}，整体替换内置点位
+function decodeCfgFromHash(){
+  try{
+    let s = null;
+    const h = location.hash;
+    if(h.startsWith('#cfg=')) s = h.slice(5);
+    else { const m = location.search.match(/[?&]cfg=([^&]+)/); if(m) s = m[1]; }
+    if(!s) return null;
+    s = s.replace(/-/g, '+').replace(/_/g, '/');   // URL安全Base64还原
+    const json = decodeURIComponent(escape(atob(s)));
+    return JSON.parse(json);
+  }catch(e){}
+  return null;
+}
+const RAW_CFG = decodeCfgFromHash();
+// 合并配置：完整格式 {bar, points, levels?} 直接采用；补丁格式在内置点位基础上删→改→增
+function mergeCfg(raw){
+  if(!raw) return BUILTIN_CFG;
+  if(Array.isArray(raw.points)) return raw;   // 完整格式（远程数据 / 旧版二维码）
+  const removed = new Set(raw.removed || []);
+  const modified = raw.modified || {};
+  const merged = BUILTIN_CFG.points
+    .filter(p => !removed.has(p.id))
+    .map(p => modified[p.id] ? Object.assign({}, p, modified[p.id], { id:p.id }) : p)
+    .concat(raw.added || []);
+  return { bar: (raw.bar !== undefined ? raw.bar : BUILTIN_CFG.bar), points: merged, levels: raw.levels };
+}
+
+/* ================= ★ 远程数据配置（数据外置：二维码永久不变，改数据即改图） ================= */
+// 点位数据托管在 GitHub 仓库的 data.json，地图打开时自动拉取最新数据；拉取失败自动回退内置数据兜底
+const REMOTE = {
+  enabled: true,
+  owner: '2598027012',               // GitHub 用户名（2026-08 配置完成）
+  repo:  'hanjiang-map-data',        // 仓库名
+  branch:'main',
+  path:  'data.json'
+};
+async function loadRemoteCfg(){
+  const { owner, repo, branch, path } = REMOTE;
+  const bust = '_=' + Date.now();
+  const sources = [
+    // ① GitHub API 原始内容：无缓存，实时最新
+    { url:`https://api.github.com/repos/${owner}/${repo}/contents/${path}?ref=${branch}&${bust}`,
+      headers:{ 'Accept':'application/vnd.github.raw+json' } },
+    // ②③ jsDelivr CDN 镜像（国内加速备用，发布时已自动刷新缓存）
+    { url:`https://cdn.jsdmirror.com/gh/${owner}/${repo}@${branch}/${path}?${bust}` },
+    { url:`https://cdn.jsdelivr.net/gh/${owner}/${repo}@${branch}/${path}?${bust}` }
+  ];
+  for(const s of sources){
+    try{
+      const r = await fetch(s.url, { headers: s.headers || {} });
+      if(!r.ok) continue;
+      const j = await r.json();
+      if(j && Array.isArray(j.points)) return mergeCfg(j);
+    }catch(e){}
+  }
+  return null;
+}
+
+function boot(CFG){
+const POINTS = CFG.points;      // {id?,name,level,lon,lat,info?|incidents?,risks?,tips?,warn?}
+// 救援站点：线上 data.json 的 stations 优先，缺省用内置值
+const STATIONS = (Array.isArray(CFG.stations) && CFG.stations.length) ? CFG.stations : BUILTIN_STATIONS;
+
+const LEVEL_COLORS = { "高危水域":"#DC2626", "水文风险":"#DC2626", "中危水域":"#EAB308", "低危水域":"#EAB308", "陡坡深水":"#EAB308", "救生点":"#059669" };
+// 三级分级（与新闻宣传口径一致）：红=高危区，黄=警戒区，绿=救援点；自定义等级默认归入警戒区
+const LEVEL_TIER  = { "高危水域":"高危区", "水文风险":"高危区", "中危水域":"警戒区", "低危水域":"警戒区", "陡坡深水":"警戒区", "水下暗礁":"警戒区", "浅滩碎石":"警戒区", "救生点":"救援点" };
+const TIER_COLORS = { "高危区":"#DC2626", "警戒区":"#EAB308", "救援点":"#059669" };
+const LEVEL_ICON   = { "高危水域":"!", "中危水域":"!", "低危水域":"!", "救生点":"✚", "陡坡深水":"!", "水文风险":"≈" };
+const DANGER_RADIUS = { "高危水域":120, "中危水域":90, "低危水域":70, "救生点":40, "陡坡深水":55, "水文风险":90 };
+// 注册随配置下发的自定义分类（levels: [{name,color}]），图例/标记/晕染圈自动生效
+if(Array.isArray(CFG.levels)){
+  CFG.levels.forEach(l => {
+    if(l && l.name && !LEVEL_COLORS[l.name]){
+      LEVEL_COLORS[l.name] = l.color || "#DC2626";
+      LEVEL_ICON[l.name] = "!";
+      DANGER_RADIUS[l.name] = 80;
+    }
+  });
+}
+
+// ---- 顶部提示条（内容可在后台配置，留空则隐藏） ----
+const barEl = document.getElementById('demo-bar');
+if(CFG.bar){ barEl.textContent = CFG.bar; } else { barEl.style.display = 'none'; }
+
+// ---- 初始化地图：视野统一框住汉江流域全部点位（不以扫码人为中心） ----
+const map = L.map('map', { zoomControl:false, minZoom:12, maxZoom:18 });
+if(POINTS.length){
+  const allLL = POINTS.map(p=>[p.lat,p.lon]).concat(STATIONS.map(s=>[s.lat,s.lon]));
+  map.fitBounds(L.latLngBounds(allLL).pad(0.3));
+}else{
+  // 无危险点位时：默认展示汉江老河口段流域全景
+  map.setView([32.3935, 111.6680], 14);
+}
+L.control.zoom({ position:'topright' }).addTo(map);
+L.control.scale({ position:'bottomleft', imperial:false }).addTo(map);
+
+// ---- 高德底图（GCJ-02，与点位坐标系一致） ----
+const sub = ['1','2','3','4'];
+const gaoDeSat = L.tileLayer('https://webst0{s}.is.autonavi.com/appmaptile?style=6&x={x}&y={y}&z={z}',
+  { subdomains:sub, maxZoom:18, attribution:'© 高德地图' });
+const gaoDeLabel = L.tileLayer('https://webst0{s}.is.autonavi.com/appmaptile?style=8&x={x}&y={y}&z={z}',
+  { subdomains:sub, maxZoom:18 });
+const gaoDeVec = L.tileLayer('https://webrd0{s}.is.autonavi.com/appmaptile?lang=zh_cn&size=1&scale=1&style=8&x={x}&y={y}&z={z}',
+  { subdomains:sub, maxZoom:18, attribution:'© 高德地图' });
+const satGroup = L.layerGroup([gaoDeSat, gaoDeLabel]).addTo(map);
+L.control.layers({ "卫星影像":satGroup, "平面地图":gaoDeVec }, null, { position:'topright' }).addTo(map);
+
+// ---- 危险点位/救生点/水文风险：晕染圈 + 脉冲标记 + 弹窗 ----
+POINTS.forEach(p => {
+  const color = LEVEL_COLORS[p.level] || "#DC2626";
+  const r = DANGER_RADIUS[p.level] || 80;
+  L.circle([p.lat, p.lon], { radius:r, color:color, weight:2, opacity:.8,
+    fillColor:color, fillOpacity:.16 }).addTo(map);
+  const icon = L.divIcon({
+    className:'pulse-wrap',
+    html:`<div class="pulse" style="--c:${color};${(p.level==='救生点'||p.level==='水文风险')?'font-size:15px;':''}">${LEVEL_ICON[p.level]||'!'}</div>`,
+    iconSize:[30,30], iconAnchor:[15,15]
+  });
+  // 弹窗内容：优先使用结构化 info 行（[{k,v}]），兼容旧格式 incidents/risks/tips
+  let rows = '';
+  if(Array.isArray(p.info)){
+    rows = p.info.map(it => `<div class="row"><span class="k">${it[0]}：</span>${it[1]}</div>`).join('');
+  } else {
+    rows = [
+      p.incidents ? `<div class="row"><span class="k">出险次数：</span>${p.incidents}</div>` : '',
+      p.risks     ? `<div class="row"><span class="k">风险类型：</span>${p.risks}</div>` : ''
+    ].join('');
+  }
+  const warnLine = (p.warn || p.tips) ? `<div class="warn-line">⛔ ${p.warn || p.tips}</div>` : '';
+  L.marker([p.lat, p.lon], { icon }).addTo(map)
+    .bindPopup(`<span class="badge" style="background:${color}">${p.name||p.level}</span>
+      <div class="row"><span class="k">经纬度：</span>E${p.lon}，N${p.lat}</div>${rows}${warnLine}`,
+      { className:'risk-popup', closeButton:true });
+});
+
+// ---- 救援站点标记（蓝天救援队 + 水上急救站；simple 为简版弹窗） ----
+STATIONS.forEach(st => {
+  const stIcon = L.divIcon({
+    className:'pulse-wrap',
+    html:`<div class="pulse" style="--c:${st.color};font-size:14px;line-height:24px">${st.icon||'救'}</div>`,
+    iconSize:[30,30], iconAnchor:[15,15]
+  });
+  // 弹窗：经纬度必显；联系人/电话/备注有值才显示对应行
+  let popupHtml = `<span class="badge" style="background:${st.color}">${st.name}</span>
+    <div class="row"><span class="k">经纬度：</span>E${st.lon}，N${st.lat}</div>`;
+  if(st.contact) popupHtml += `<div class="row"><span class="k">联系人：</span>${st.contact}</div>`;
+  if(st.phone)   popupHtml += `<div class="row"><span class="k">联系电话：</span><a href="tel:${st.phone}" style="color:#2563EB;font-weight:700;text-decoration:none">${st.phone}</a></div>`;
+  if(st.note)    popupHtml += `<div class="row"><span class="k">备注：</span>${st.note}</div>`;
+  popupHtml += `<div class="warn-line">🆘 紧急溺水事故请先拨打 110 / 119 / 120</div>`;
+  L.marker([st.lat, st.lon], { icon:stIcon }).addTo(map)
+    .bindPopup(popupHtml, { className:'risk-popup', closeButton:true });
+});
+
+// ---- 图例（按实际存在的点位动态生成；窄屏默认折叠，点击展开） ----
+const legend = L.control({ position:'bottomright' });
+legend.onAdd = () => {
+  const div = L.DomUtil.create('div', 'legend');
+  let items = '';
+  // 图例按三级分级显示：红=高危区，黄=警戒区，绿=救援点
+  ['高危区','警戒区','救援点'].forEach(t => {
+    if(POINTS.some(p => (LEVEL_TIER[p.level]||'警戒区') === t)){
+      items += `<div><span class="dot" style="background:${TIER_COLORS[t]}"></span>${t}</div>`;
+    }
+  });
+  STATIONS.forEach(st => {
+    items += `<div><span class="dot" style="background:${st.color}"></span>${st.name}</div>`;
+  });
+  div.innerHTML = `<div class="lg-head">🗺 图例 <span class="lg-arrow">▾</span></div><div class="lg-body">${items}</div>`;
+  L.DomEvent.disableClickPropagation(div);
+  L.DomEvent.disableScrollPropagation(div);
+  const head = div.querySelector('.lg-head');
+  head.onclick = () => {
+    div.classList.toggle('closed');
+    div.querySelector('.lg-arrow').textContent = div.classList.contains('closed') ? '▸' : '▾';
+  };
+  if(window.innerWidth < 640){
+    div.classList.add('closed');
+    div.querySelector('.lg-arrow').textContent = '▸';
+  }
+  return div;
+};
+legend.addTo(map);
+
+// ---- 定位纠偏（浏览器定位 WGS-84 → GCJ-02） ----
+const PI = Math.PI, AXIS = 6378245.0, ECC = 0.00669342162296594323;
+function tLat(x,y){let r=-100+2*x+3*y+0.2*y*y+0.1*x*y+0.2*Math.sqrt(Math.abs(x));
+  r+=(20*Math.sin(6*x*PI)+20*Math.sin(2*x*PI))*2/3;
+  r+=(20*Math.sin(y*PI)+40*Math.sin(y/3*PI))*2/3;
+  r+=(160*Math.sin(y/12*PI)+320*Math.sin(y*PI/30))*2/3; return r;}
+function tLon(x,y){let r=300+x+2*y+0.1*x*x+0.1*x*y+0.1*Math.sqrt(Math.abs(x));
+  r+=(20*Math.sin(6*x*PI)+20*Math.sin(2*x*PI))*2/3;
+  r+=(20*Math.sin(x*PI)+40*Math.sin(x/3*PI))*2/3;
+  r+=(150*Math.sin(x/12*PI)+300*Math.sin(x/30*PI))*2/3; return r;}
+function wgs2gcj(lon,lat){
+  if(lon<72.004||lon>137.8347||lat<0.8293||lat>55.8271) return [lon,lat];
+  let dLat=tLat(lon-105,lat-35), dLon=tLon(lon-105,lat-35);
+  const radLat=lat/180*PI; let m=Math.sin(radLat); m=1-ECC*m*m;
+  const sq=Math.sqrt(m);
+  dLat=(dLat*180)/((AXIS*(1-ECC))/(m*sq)*PI);
+  dLon=(dLon*180)/(AXIS/sq*Math.cos(radLat)*PI);
+  return [lon+dLon, lat+dLat];
+}
+
+// ================= 救生设备匹配池（救援队 + 水上急救站 + 所有"救生点"类型点位） =================
+const RESCUE_DEVICES = STATIONS.map(st => ({ name:st.name, lon:st.lon, lat:st.lat }))
+  .concat(POINTS.filter(p=>p.level==='救生点').map(p=>({name:p.name, lon:p.lon, lat:p.lat})));
+
+function haversine(lat1, lon1, lat2, lon2){
+  const R = 6371000, rad = Math.PI/180;
+  const dLat = (lat2-lat1)*rad, dLon = (lon2-lon1)*rad;
+  const a = Math.sin(dLat/2)**2 + Math.cos(lat1*rad)*Math.cos(lat2*rad)*Math.sin(dLon/2)**2;
+  return 2*R*Math.asin(Math.sqrt(a));
+}
+function nearestDevice(glat, glon){
+  let best = null, bestD = Infinity;
+  RESCUE_DEVICES.forEach(dev => {
+    const d = haversine(glat, glon, dev.lat, dev.lon);
+    if(d < bestD){ bestD = d; best = dev; }
+  });
+  return { dev:best, dist:bestD };
+}
+function fmtDist(m){
+  return m < 1000 ? `约 ${Math.round(m)} 米` : `约 ${(m/1000).toFixed(1)} 公里`;
+}
+
+// ---- 定位 → 显示蓝点（不改变地图视野）→ 最近救生点路线 + 导航卡片 ----
+let meMarker = null, routeLine = null;
+function updateRoute(glat, glon){
+  if(meMarker) map.removeLayer(meMarker);
+  meMarker = L.circleMarker([glat, glon], {
+    radius:9, color:'#fff', weight:3, fillColor:'#2563EB', fillOpacity:1
+  }).addTo(map).bindPopup('<b>📍 我的位置</b>');
+
+  const { dev, dist } = nearestDevice(glat, glon);
+  if(!dev) return;
+  if(routeLine) map.removeLayer(routeLine);
+  routeLine = L.polyline([[glat, glon], [dev.lat, dev.lon]], {
+    color:'#2563EB', weight:4, dashArray:'8 8', opacity:.85
+  }).addTo(map);
+
+  document.getElementById('nc-name').textContent = dev.name;
+  document.getElementById('nc-dist').textContent = `直线${fmtDist(dist)}`;
+  document.getElementById('nc-go').href =
+    `https://uri.amap.com/navigation?from=${glon},${glat},${encodeURIComponent('我的位置')}` +
+    `&to=${dev.lon},${dev.lat},${encodeURIComponent(dev.name)}` +
+    `&mode=walk&policy=1&src=hustsj&coordinate=gaode&callnative=1`;
+  document.getElementById('nav-card').classList.add('show');
+  document.body.classList.add('nav-on');
+}
+document.getElementById('nc-close').onclick = function(){
+  document.getElementById('nav-card').classList.remove('show');
+  document.body.classList.remove('nav-on');
+};
+
+let toastTimer = null;
+function toast(msg){
+  const el = document.getElementById('toast');
+  el.textContent = msg; el.style.display = 'block';
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => el.style.display = 'none', 4500);
+}
+
+let locating = false;
+function startLocate(isManual){
+  if(!navigator.geolocation){ if(isManual) alert('您的浏览器不支持定位'); return; }
+  if(locating) return; locating = true;
+  const opt = { enableHighAccuracy:true, timeout:10000 };
+  navigator.geolocation.getCurrentPosition(pos => {
+    const [glon, glat] = wgs2gcj(pos.coords.longitude, pos.coords.latitude);
+    updateRoute(glat, glon);
+    navigator.geolocation.watchPosition(p2 => {
+      const [g2lon, g2lat] = wgs2gcj(p2.coords.longitude, p2.coords.latitude);
+      updateRoute(g2lat, g2lon);
+    }, () => {}, opt);
+  }, () => {
+    locating = false;
+    if(isManual) alert('定位失败，请检查定位权限');
+    else toast('无法自动定位：请点击右上角📍并允许定位权限，即可查看到最近救生点的路线');
+  }, opt);
+}
+const locateCtl = L.control({ position:'topright' });
+locateCtl.onAdd = () => {
+  const div = L.DomUtil.create('div', 'locate-btn');
+  div.innerHTML = '📍'; div.title = '我的位置';
+  L.DomEvent.disableClickPropagation(div);
+  div.onclick = () => startLocate(true);
+  return div;
+};
+locateCtl.addTo(map);
+
+// ---- 进入后自动定位（仅显示蓝点和路线，视野始终保持汉江流域全景） ----
+// 调试/演示：网址后加 ?debugpos=经度,纬度（GCJ-02）可模拟定位
+const dbgPos = new URLSearchParams(location.search).get('debugpos');
+if(dbgPos){
+  const [dLon, dLat] = dbgPos.split(',').map(Number);
+  updateRoute(dLat, dLon);
+} else {
+  startLocate(false);
+}
+}   /* ================== boot() 结束 ================== */
+
+/* ---- 启动优先级：#cfg 补丁（后台预览/旧二维码）→ 远程线上数据 → 内置兜底数据 ---- */
+if(RAW_CFG){
+  boot(mergeCfg(RAW_CFG));
+}else if(REMOTE.enabled && REMOTE.owner !== 'YOUR_GITHUB_USERNAME'){
+  loadRemoteCfg().then(cfg => boot(cfg || BUILTIN_CFG));
+}else{
+  boot(BUILTIN_CFG);
+}
+
+// ---- 移除平台注入的 "Kimi Agent" 标识 ----
+function removeKimiBadge(){
+  document.querySelectorAll('a[href*="kimi.com"], iframe[src*="kimi.com"]').forEach(e => e.remove());
+  document.querySelectorAll('body *').forEach(e => {
+    if (e.childElementCount === 0 && e.textContent.trim() === 'Kimi Agent') {
+      let p = e;
+      for (let i = 0; i < 5 && p.parentElement && p.parentElement !== document.body; i++) p = p.parentElement;
+      p.remove();
+    }
+  });
+}
+removeKimiBadge();
+setInterval(removeKimiBadge, 500);
+new MutationObserver(muts => {
+  for(const m of muts) for(const n of m.addedNodes){
+    if(n.nodeType===1 && (n.tagName==='A' || n.tagName==='IFRAME')){ removeKimiBadge(); return; }
+  }
+}).observe(document.body, { childList:true, subtree:true });
+</script>
+
+
+</body></html>
