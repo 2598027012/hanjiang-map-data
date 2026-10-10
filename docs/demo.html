@@ -1,0 +1,804 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>汉江防溺水警示系统 · 开发环境</title>
+<link rel="stylesheet" href="https://cdn.jsdmirror.com/npm/leaflet@1.9.4/dist/leaflet.css"/>
+<script src="https://cdn.jsdmirror.com/npm/leaflet@1.9.4/dist/leaflet.js"></script>
+<script src="https://cdn.jsdmirror.com/npm/qrcode-generator@1.4.4/qrcode.min.js"></script>
+<style>
+  * { margin:0; padding:0; box-sizing:border-box; }
+  html,body { height:100%; background:#0B1220; color:#E5E7EB;
+    font-family:"PingFang SC","Microsoft YaHei",sans-serif; overflow:hidden; }
+  /* ---------- 顶部栏 ---------- */
+  #topbar {
+    height:54px; display:flex; align-items:center; gap:10px; padding:0 18px;
+    background:#0F172A; border-bottom:1px solid #1E293B; position:relative; z-index:2000;
+  }
+  #topbar .logo { color:#F87171; font-weight:800; font-size:15px; letter-spacing:1px; margin-right:14px; }
+  .tab {
+    border:1px solid #334155; background:#1E293B; color:#94A3B8; border-radius:9px;
+    padding:7px 16px; font-size:13.5px; cursor:pointer; font-weight:600; transition:.2s;
+  }
+  .tab.on { background:#B91C1C; border-color:#B91C1C; color:#fff; box-shadow:0 0 14px rgba(185,28,28,.5); }
+  #topbar .ver { margin-left:auto; color:#334155; font-size:12px; font-family:Consolas,monospace; }
+  /* ---------- 场景容器 ---------- */
+  .scene { display:none; height:calc(100vh - 54px); padding:26px 34px; }
+  .scene.on { display:flex; flex-direction:column; }
+  .sc-head { display:flex; align-items:baseline; gap:16px; margin-bottom:18px; }
+  .sc-num {
+    background:#B91C1C; color:#fff; font-weight:800; border-radius:10px;
+    padding:4px 14px; font-size:15px; flex-shrink:0;
+  }
+  .sc-title { font-size:26px; font-weight:800; color:#F8FAFC; letter-spacing:1px; }
+  .sc-sub { color:#64748B; font-size:14px; }
+  .sc-body { flex:1; display:flex; gap:22px; min-height:0; }
+  .panel {
+    background:#111A2E; border:1px solid #1E293B; border-radius:16px;
+    padding:20px 22px; overflow:hidden; position:relative;
+  }
+  /* ---------- 代码编辑器 ---------- */
+  .editor { background:#161B2C; border:1px solid #232C47; border-radius:14px;
+    display:flex; flex-direction:column; overflow:hidden; transition:.18s; }
+  .editor.drop-hi { border-color:#DC2626;
+    box-shadow:0 0 0 2px rgba(220,38,38,.55), 0 0 34px rgba(220,38,38,.35); }
+  .ed-head { display:flex; align-items:center; gap:7px; background:#1D2438;
+    padding:9px 14px; border-bottom:1px solid #232C47; }
+  .ed-dot { width:11px; height:11px; border-radius:50%; }
+  .ed-file { color:#7C8DB0; font-size:12.5px; margin-left:8px;
+    font-family:Consolas,Menlo,monospace; }
+  .ed-body { flex:1; padding:16px 18px; overflow:hidden;
+    font-family:Consolas,Menlo,"Courier New",monospace; font-size:14.5px; line-height:1.75;
+    white-space:pre-wrap; color:#D6DEEB; }
+  .cursor { display:inline-block; width:8px; height:17px; background:#F87171;
+    vertical-align:-3px; animation:blink 1s steps(1) infinite; }
+  @keyframes blink { 50% { opacity:0; } }
+  .tk-k { color:#C792EA; } .tk-s { color:#ECC48D; } .tk-c { color:#5B6B8C; font-style:italic; }
+  .tk-n { color:#F78C6C; } .tk-f { color:#82AAFF; } .tk-p { color:#89DDFF; }
+  /* 控制台 */
+  .console { background:#0A0F1E; border-top:1px solid #232C47; padding:10px 18px;
+    font-family:Consolas,monospace; font-size:13px; line-height:1.9; min-height:96px;
+    max-height:150px; overflow:hidden; }
+  .c-ok { color:#4ADE80; } .c-run { color:#FBBF24; } .c-info { color:#7C8DB0; } .c-key { color:#60A5FA; }
+  /* ---------- 运行按钮 ---------- */
+  .run-btn {
+    background:linear-gradient(135deg,#DC2626,#991B1B); color:#fff; border:none;
+    border-radius:14px; padding:15px 44px; font-size:19px; font-weight:800; letter-spacing:4px;
+    cursor:pointer; box-shadow:0 0 26px rgba(220,38,38,.45); transition:.2s;
+  }
+  .run-btn:hover { transform:scale(1.04); }
+  .run-btn:disabled { opacity:.45; cursor:default; transform:none; box-shadow:none; }
+  /* ---------- 点位数据卡 ---------- */
+  #card-panel { width:276px; flex-shrink:0; display:flex; flex-direction:column; gap:12px; }
+  .card-cap { color:#7C8DB0; font-size:12.5px; letter-spacing:2px; font-weight:700; }
+  .card-cap2 { color:#475569; font-size:11.5px; line-height:1.7; }
+  .pt-card { background:#161B2C; border:1px solid #2A3554; border-left:5px solid var(--c);
+    border-radius:12px; padding:12px 14px; cursor:grab; transition:.18s; user-select:none; }
+  .pt-card:hover { transform:translateY(-2px); box-shadow:0 6px 18px rgba(0,0,0,.45); border-color:var(--c); }
+  .pt-card:active { cursor:grabbing; opacity:.85; }
+  .pt-card .nm { font-weight:800; font-size:14.5px; color:#F8FAFC; margin-bottom:6px; }
+  .pt-card .tg { display:inline-block; font-size:11.5px; font-weight:700; color:var(--c);
+    border:1px solid var(--c); border-radius:6px; padding:1px 8px; margin-bottom:7px; }
+  .pt-card .co { font-family:Consolas,monospace; font-size:12px; color:#7C8DB0; line-height:1.7; }
+  .pt-card .ds { font-size:12px; color:#94A3B8; margin-top:6px; line-height:1.6; }
+  #card-dock { display:flex; flex-direction:column; gap:12px; }
+  .dock-in { animation:dockIn .45s cubic-bezier(.2,1.3,.4,1); }
+  @keyframes dockIn { 0%{ transform:scale(.5); opacity:0; } 100%{ transform:none; opacity:1; } }
+  #reset3 { margin-top:auto; align-self:flex-end; background:none; border:1px solid #24304D;
+    color:#475569; border-radius:8px; padding:5px 12px; font-size:12px; cursor:pointer; }
+  #reset3:hover { color:#94A3B8; border-color:#334155; }
+  /* 拖出幽灵卡 */
+  #ghost { position:fixed; z-index:5000; pointer-events:none; width:250px; display:none;
+    opacity:.94; transform:translate(-50%,-58%) rotate(-3deg);
+    filter:drop-shadow(0 14px 22px rgba(0,0,0,.6)); }
+  /* ---------- 点位修改浮层 ---------- */
+  #edit-mask { position:fixed; inset:0; background:rgba(4,8,18,.66); z-index:4000;
+    display:none; align-items:center; justify-content:center; }
+  #edit-card { width:540px; background:#111A2E; border:1px solid #334155; border-radius:18px;
+    padding:24px 28px; animation:dockIn .28s; box-shadow:0 24px 60px rgba(0,0,0,.55); }
+  .ec-title { font-size:19px; font-weight:800; color:#F8FAFC; }
+  .ec-sub { color:#64748B; font-size:12.5px; margin:6px 0 16px; }
+  #edit-card label { display:block; color:#7C8DB0; font-size:12.5px; margin:10px 0 5px; }
+  #edit-card input, #edit-card select, #edit-card textarea {
+    width:100%; background:#0A0F1E; border:1px solid #2A3554; border-radius:9px;
+    color:#E5E7EB; padding:9px 12px; font-size:14px; outline:none;
+    font-family:Consolas,Menlo,monospace; }
+  #edit-card input:focus, #edit-card select:focus, #edit-card textarea:focus { border-color:#DC2626; }
+  #edit-card textarea { font-family:"PingFang SC","Microsoft YaHei",sans-serif; resize:none; }
+  .ec-row { display:flex; gap:14px; } .ec-row > div { flex:1; }
+  .ec-btns { display:flex; gap:14px; margin-top:20px; }
+  .ec-pack { flex:1; background:linear-gradient(135deg,#DC2626,#991B1B); color:#fff; border:none;
+    border-radius:11px; padding:12px; font-size:15px; font-weight:800; cursor:pointer;
+    box-shadow:0 0 20px rgba(220,38,38,.4); }
+  .ec-cancel { background:#1E293B; color:#94A3B8; border:1px solid #334155; border-radius:11px;
+    padding:12px 22px; font-size:14px; cursor:pointer; }
+  /* ---------- 地图标记 ---------- */
+  .pulse-wrap { background:transparent; border:none; }
+  .pulse {
+    width:26px; height:26px; border-radius:50%; background:var(--c);
+    border:3px solid #fff; box-shadow:0 0 8px rgba(0,0,0,.6);
+    color:#fff; font-weight:700; font-size:14px; line-height:20px; text-align:center;
+  }
+  .drop-in { animation:drop .38s cubic-bezier(.2,1.4,.4,1); }
+  @keyframes drop { 0%{ transform:translateY(-46px) scale(.4); opacity:0; } 100%{ transform:none; opacity:1; } }
+  .zone-circle { animation:zoneIn .7s ease-out; }
+  @keyframes zoneIn { from { opacity:0; } to { opacity:1; } }
+  .map-badge {
+    position:absolute; top:14px; left:14px; z-index:900; background:rgba(11,18,32,.88);
+    border:1px solid #334155; border-radius:10px; padding:8px 16px; font-size:14px;
+    color:#F8FAFC; font-weight:700; display:none;
+  }
+  .map-badge b { color:#F87171; font-size:17px; }
+  .map-tip {
+    position:absolute; bottom:14px; left:14px; z-index:900; background:rgba(11,18,32,.82);
+    border:1px solid #24304D; border-radius:9px; padding:6px 13px; font-size:12px; color:#64748B;
+  }
+  .legend-d {
+    background:rgba(11,18,32,.9); border:1px solid #334155; border-radius:10px;
+    padding:9px 14px; font-size:12.5px; line-height:2; color:#CBD5E1;
+  }
+  .legend-d .dot { display:inline-block; width:10px; height:10px; border-radius:50%; margin-right:7px; }
+  /* ---------- 表格（场景1） ---------- */
+  table { width:100%; border-collapse:collapse; font-size:14.5px; }
+  th,td { border:1px solid #24304D; padding:9px 14px; text-align:left; }
+  th { background:#1A2440; color:#93C5FD; font-weight:700; }
+  td { color:#CBD5E1; font-family:Consolas,monospace; }
+  tr.row-in { animation:rowIn .3s ease-out; }
+  @keyframes rowIn { from { opacity:0; transform:translateX(-14px);} to { opacity:1; transform:none;} }
+  .lv-tag { font-weight:700; font-family:"PingFang SC",sans-serif; }
+  /* ---------- 手机框（场景4） ---------- */
+  .phone {
+    width:320px; height:560px; border:10px solid #1E293B; border-radius:36px; overflow:hidden;
+    background:#000; box-shadow:0 12px 44px rgba(0,0,0,.6); display:flex; flex-direction:column;
+  }
+  .phone .notch { height:22px; background:#1E293B; display:flex; justify-content:center; }
+  .phone .notch::after { content:""; width:110px; height:14px; background:#1E293B;
+    border-radius:0 0 10px 10px; }
+  #phone-map { flex:1; min-height:0; }
+  .phone-toast {
+    position:absolute; left:50%; top:46%; transform:translateX(-50%);
+    background:rgba(5,150,105,.95); color:#fff; font-weight:700; font-size:14px;
+    border-radius:10px; padding:10px 20px; z-index:950; display:none;
+    box-shadow:0 4px 18px rgba(0,0,0,.5); animation:rowIn .3s;
+  }
+  #qr-mini { background:#fff; border-radius:14px; padding:10px; }
+  .flash { animation:flash .5s; }
+  @keyframes flash { 0%{ filter:brightness(2.2);} 100%{ filter:none;} }
+  ::-webkit-scrollbar { width:0; height:0; }
+</style>
+</head>
+<body>
+<div id="topbar">
+  <span class="logo">🛟 汉江防溺水警示系统</span>
+  <button class="tab" data-sc="1">① 实地勘探</button>
+  <button class="tab" data-sc="2">② 坐标纠偏</button>
+  <button class="tab" data-sc="3">③ 点位录入 · 运行</button>
+  <button class="tab" data-sc="4">④ 云端发布 · 同步</button>
+  <span class="ver">dev-env v2.4.1</span>
+</div>
+
+<!-- ================= 场景1：实地勘探数据采集 ================= -->
+<div class="scene" id="sc1">
+  <div class="sc-head">
+    <span class="sc-num">STEP 1</span>
+    <span class="sc-title">实地勘探 · 数据采集</span>
+    <span class="sc-sub">汉江老河口段 · 携带奥维互动地图沿岸徒步打点 · 实测坐标采集</span>
+  </div>
+  <div class="sc-body">
+    <div class="panel" style="flex:1.4">
+      <table>
+        <thead><tr><th>点位编号</th><th>类型</th><th>经度 E</th><th>纬度 N</th></tr></thead>
+        <tbody id="survey-tbody"></tbody>
+      </table>
+    </div>
+    <div class="panel" style="flex:1; display:flex; flex-direction:column; justify-content:center; align-items:center; gap:18px">
+      <div style="font-size:15px; color:#94A3B8">已采集实测点位</div>
+      <div id="survey-count" style="font-size:64px; font-weight:800; color:#F87171; font-family:Consolas,monospace">0</div>
+      <div id="survey-msg" style="font-size:14px; color:#4ADE80; opacity:0; transition:.4s">✔ 勘探完成：36 个点位 · 2 个救援站点 · 全部实地核验</div>
+      <button class="run-btn" id="survey-run" style="font-size:16px; letter-spacing:2px; padding:12px 34px">▶ 导入勘探记录</button>
+    </div>
+  </div>
+</div>
+
+<!-- ================= 场景2：坐标纠偏 ================= -->
+<div class="scene" id="sc2">
+  <div class="sc-head">
+    <span class="sc-num">STEP 2</span>
+    <span class="sc-title">坐标纠偏 · WGS-84 → GCJ-02</span>
+    <span class="sc-sub">手机定位与国内地图坐标系不一致，必须算法纠偏，否则点位全部"漂移"</span>
+  </div>
+  <div class="sc-body">
+    <div class="editor" style="flex:1.25">
+      <div class="ed-head">
+        <span class="ed-dot" style="background:#FF5F57"></span>
+        <span class="ed-dot" style="background:#FEBC2E"></span>
+        <span class="ed-dot" style="background:#28C840"></span>
+        <span class="ed-file">coord-transform.js</span>
+      </div>
+      <div class="ed-body" id="code2"></div>
+    </div>
+    <div class="panel" style="flex:1; display:flex; flex-direction:column; justify-content:center; gap:22px">
+      <div style="font-size:14px; color:#94A3B8">以蓝天救援站点位为例</div>
+      <div class="panel" style="border-color:#7F1D1D">
+        <div style="color:#F87171; font-weight:700; font-size:13px; margin-bottom:6px">纠偏前（手机GPS原始值 WGS-84）</div>
+        <div id="coord-before" style="font-family:Consolas,monospace; font-size:20px; color:#FCA5A5"></div>
+      </div>
+      <div style="text-align:center; font-size:26px; color:#4ADE80">⬇ wgs2gcj() 算法转换</div>
+      <div class="panel" style="border-color:#065F46">
+        <div style="color:#34D399; font-weight:700; font-size:13px; margin-bottom:6px">纠偏后（地图坐标 GCJ-02）</div>
+        <div id="coord-after" style="font-family:Consolas,monospace; font-size:20px; color:#6EE7B7"></div>
+      </div>
+      <div id="coord-ok" style="text-align:center; color:#4ADE80; font-weight:700; font-size:16px; opacity:0; transition:.4s">✔ 偏移已消除，点位精准落在江岸线上</div>
+    </div>
+  </div>
+</div>
+
+<!-- ================= 场景3：点位录入·运行 ================= -->
+<div class="scene" id="sc3">
+  <div class="sc-head">
+    <span class="sc-num">STEP 3</span>
+    <span class="sc-title">点位录入 · 调试运行</span>
+    <span class="sc-sub">拖拽数据卡 → 自动生成代码并运行 → 地图实时渲染 ｜ 地图上点位可拖出修改</span>
+  </div>
+  <div class="sc-body">
+    <!-- 左：数据卡面板 -->
+    <div class="panel" id="card-panel">
+      <div class="card-cap">点位数据卡</div>
+      <div class="card-cap2">勘探打包好的点位 · 拖入中间代码区即可录入</div>
+      <div class="pt-card" draggable="true" data-card="rescue"
+           style="--c:#059669">
+        <div class="nm">🛟 救生设施投放点 14</div>
+        <span class="tg">救生点</span>
+        <div class="co">E 111.676200<br/>N 32.408900</div>
+        <div class="ds">配备救生圈×2、救生杆×1，位于汉江右岸亲水平台台阶旁</div>
+      </div>
+      <div class="pt-card" draggable="true" data-card="danger"
+           style="--c:#B91C1C">
+        <div class="nm">⚠ 陡坡危险点 33</div>
+        <span class="tg">陡坡深水</span>
+        <div class="co">E 111.680600<br/>N 32.398200</div>
+        <div class="ds">近 70° 陡坡，坡底水深超 3 米，暗流涌动，禁止靠近下水</div>
+      </div>
+      <div id="card-dock"></div>
+      <button id="reset3">↺ 重置</button>
+    </div>
+    <!-- 中：代码区（拖放目标） -->
+    <div style="flex:1.12; display:flex; flex-direction:column; min-height:0">
+      <div class="editor" id="editor3" style="flex:1; min-height:0">
+        <div class="ed-head">
+          <span class="ed-dot" style="background:#FF5F57"></span>
+          <span class="ed-dot" style="background:#FEBC2E"></span>
+          <span class="ed-dot" style="background:#28C840"></span>
+          <span class="ed-file">points-loader.js —— 点位数据加载器</span>
+        </div>
+        <div class="ed-body" id="code3"></div>
+        <div class="console" id="console3"></div>
+      </div>
+    </div>
+    <!-- 右：地图 -->
+    <div class="panel" style="flex:1.25; padding:0">
+      <div id="map3" style="position:absolute; inset:0; border-radius:16px"></div>
+      <div class="map-badge" id="badge3">当前点位 <b id="badge3-n">0</b></div>
+      <div class="map-tip">按住地图上的点位可拖出修改</div>
+    </div>
+  </div>
+</div>
+
+<!-- ================= 场景4：云端发布·同步 ================= -->
+<div class="scene" id="sc4">
+  <div class="sc-head">
+    <span class="sc-num">STEP 4</span>
+    <span class="sc-title">云端发布 · 扫码同步更新</span>
+    <span class="sc-sub">点位数据托管云端 → 一键发布 → 群众扫同一个二维码即见最新地图</span>
+  </div>
+  <div class="sc-body">
+    <div style="flex:1.25; display:flex; flex-direction:column; gap:14px; min-height:0">
+      <div class="editor" style="flex:1; min-height:0">
+        <div class="ed-head">
+          <span class="ed-dot" style="background:#FF5F57"></span>
+          <span class="ed-dot" style="background:#FEBC2E"></span>
+          <span class="ed-dot" style="background:#28C840"></span>
+          <span class="ed-file">data.json —— 云端点位数据（GitHub 数据仓库）</span>
+        </div>
+        <div class="ed-body" id="code4" style="font-size:13.5px"></div>
+        <div class="console" id="console4"></div>
+      </div>
+      <div style="text-align:center">
+        <button class="run-btn" id="run4" style="background:linear-gradient(135deg,#059669,#047857); box-shadow:0 0 26px rgba(5,150,105,.45)">🚀 发布到线上</button>
+      </div>
+    </div>
+    <div class="panel" style="flex:1; display:flex; align-items:center; justify-content:center; gap:26px">
+      <div class="phone">
+        <div class="notch"></div>
+        <div id="phone-map"></div>
+        <div class="phone-toast" id="phone-toast">✓ 点位数据已更新</div>
+      </div>
+      <div style="display:flex; flex-direction:column; align-items:center; gap:12px">
+        <div id="qr-mini"></div>
+        <div style="color:#94A3B8; font-size:13px; text-align:center; line-height:1.8">群众扫码<br/>二维码不变 · 内容常新</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- 拖出点位时的跟随幽灵卡 -->
+<div id="ghost"></div>
+
+<!-- 点位修改浮层 -->
+<div id="edit-mask">
+  <div id="edit-card">
+    <div class="ec-title">✏️ 点位信息修改</div>
+    <div class="ec-sub">从地图拖出的点位 —— 修改后打包为数据卡，再拖入代码区重新运行生效</div>
+    <label>点位名称</label>
+    <input id="ec-name"/>
+    <label>危险类型</label>
+    <select id="ec-level">
+      <option>高危水域</option><option>中危水域</option><option>低危水域</option>
+      <option>救生点</option><option>陡坡深水</option><option>水文风险</option>
+    </select>
+    <div class="ec-row">
+      <div><label>经度 E</label><input id="ec-lon"/></div>
+      <div><label>纬度 N</label><input id="ec-lat"/></div>
+    </div>
+    <label>说明文字</label>
+    <textarea id="ec-desc" rows="2"></textarea>
+    <div class="ec-btns">
+      <button class="ec-pack" id="ec-pack">✔ 打包为数据卡</button>
+      <button class="ec-cancel" id="ec-cancel">✕ 取消</button>
+    </div>
+  </div>
+</div>
+
+<script>
+/* ==================== 点位数据（与真实系统一致） ==================== */
+const POINTS = [{"n": "救生设施投放点 01", "l": "救生点", "o": 111.662394, "a": 32.380152}, {"n": "救生设施投放点 02", "l": "救生点", "o": 111.663335, "a": 32.38187}, {"n": "救生设施投放点 03", "l": "救生点", "o": 111.664484, "a": 32.383417}, {"n": "救生设施投放点 04", "l": "救生点", "o": 111.667091, "a": 32.386155}, {"n": "救生设施投放点 05", "l": "救生点", "o": 111.668824, "a": 32.387742}, {"n": "救生设施投放点 06", "l": "救生点", "o": 111.671569, "a": 32.38978}, {"n": "救生设施投放点 07", "l": "救生点", "o": 111.672509, "a": 32.390286}, {"n": "救生设施投放点 08", "l": "救生点", "o": 111.676043, "a": 32.39258}, {"n": "救生设施投放点 09", "l": "救生点", "o": 111.681148, "a": 32.399996}, {"n": "救生设施投放点 10", "l": "救生点", "o": 111.680399, "a": 32.401516}, {"n": "救生设施投放点 11", "l": "救生点", "o": 111.679202, "a": 32.402686}, {"n": "救生设施投放点 12", "l": "救生点", "o": 111.678828, "a": 32.40307}, {"n": "救生设施投放点 13", "l": "救生点", "o": 111.675843, "a": 32.406032}, {"n": "弯道深槽·漩涡易发区", "l": "水文风险", "o": 111.67, "a": 32.4078}, {"n": "江心洲滩·紊流暗流区", "l": "水文风险", "o": 111.6645, "a": 32.3905}, {"n": "桥墩紊流·漩涡区", "l": "水文风险", "o": 111.6587, "a": 32.3811}, {"n": "闸坝调度·水位骤变警示区", "l": "水文风险", "o": 111.6575, "a": 32.374}, {"n": "陡坡危险点 14", "l": "陡坡深水", "o": 111.675616, "a": 32.40577}, {"n": "陡坡危险点 15", "l": "陡坡深水", "o": 111.679241, "a": 32.402245}, {"n": "陡坡危险点 16", "l": "陡坡深水", "o": 111.680848, "a": 32.399904}, {"n": "陡坡危险点 17", "l": "陡坡深水", "o": 111.679958, "a": 32.397634}, {"n": "陡坡危险点 18", "l": "陡坡深水", "o": 111.678391, "a": 32.395515}, {"n": "陡坡危险点 19", "l": "陡坡深水", "o": 111.677588, "a": 32.394083}, {"n": "陡坡危险点 20", "l": "陡坡深水", "o": 111.676967, "a": 32.39338}, {"n": "陡坡危险点 21", "l": "陡坡深水", "o": 111.675722, "a": 32.392437}, {"n": "陡坡危险点 22", "l": "陡坡深水", "o": 111.67559, "a": 32.39236}, {"n": "陡坡危险点 23", "l": "陡坡深水", "o": 111.670098, "a": 32.388803}, {"n": "陡坡危险点 24", "l": "陡坡深水", "o": 111.669176, "a": 32.388119}, {"n": "陡坡危险点 25", "l": "陡坡深水", "o": 111.668718, "a": 32.3878}, {"n": "陡坡危险点 26", "l": "陡坡深水", "o": 111.667971, "a": 32.387164}, {"n": "陡坡危险点 27", "l": "陡坡深水", "o": 111.665573, "a": 32.385311}, {"n": "陡坡危险点 28", "l": "陡坡深水", "o": 111.664929, "a": 32.384953}, {"n": "陡坡危险点 29", "l": "陡坡深水", "o": 111.664328, "a": 32.384339}, {"n": "陡坡危险点 30", "l": "陡坡深水", "o": 111.663856, "a": 32.383654}, {"n": "陡坡危险点 31", "l": "陡坡深水", "o": 111.662837, "a": 32.381717}, {"n": "陡坡危险点 32", "l": "陡坡深水", "o": 111.661964, "a": 32.38044}];
+const STATIONS = [
+  { name:"蓝天救援队", lon:111.660957, lat:32.376996, color:"#2563EB", icon:"救" },
+  { name:"水上急救站", lon:111.660962, lat:32.377628, color:"#E11D48", icon:"✚" }
+];
+const LV_COLOR = { "高危水域":"#DC2626","水文风险":"#DC2626","中危水域":"#EAB308",
+  "低危水域":"#EAB308","陡坡深水":"#EAB308","救生点":"#059669" };
+const LV_TIER = { "高危水域":"高危区","水文风险":"高危区","中危水域":"警戒区","低危水域":"警戒区","陡坡深水":"警戒区","水下暗礁":"警戒区","浅滩碎石":"警戒区","救生点":"救援点" };
+const TIER_COLOR = { "高危区":"#DC2626","警戒区":"#EAB308","救援点":"#059669" };
+const LV_ICON = { "救生点":"✚","水文风险":"≈" };
+const LV_R = { "高危水域":120,"中危水域":90,"低危水域":70,"救生点":40,"陡坡深水":55,"水文风险":90 };
+const TILES = 'https://webst0{s}.is.autonavi.com/appmaptile?style=6&x={x}&y={y}&z={z}';
+const TILES_LABEL = 'https://webst0{s}.is.autonavi.com/appmaptile?style=8&x={x}&y={y}&z={z}';
+
+/* 两张预置数据卡 */
+const CARD_DATA = {
+  rescue: { name:'救生设施投放点 14', level:'救生点', lon:111.676200, lat:32.408900,
+            desc:'配备救生圈×2、救生杆×1，位于汉江右岸亲水平台台阶旁' },
+  danger: { name:'陡坡危险点 33', level:'陡坡深水', lon:111.680600, lat:32.398200,
+            desc:'近 70° 陡坡，坡底水深超 3 米，暗流涌动，禁止靠近下水' }
+};
+
+/* ==================== 场景切换 ==================== */
+let curScene = 1;
+const inited = {};
+function showScene(n){
+  curScene = n;
+  document.querySelectorAll('.tab').forEach(t => t.classList.toggle('on', +t.dataset.sc === n));
+  document.querySelectorAll('.scene').forEach(s => s.classList.toggle('on', s.id === 'sc' + n));
+  if(!inited[n]){ inited[n] = true; initScene(n); }
+  else if(n === 3 && map3) setTimeout(() => map3.invalidateSize(), 60);
+  else if(n === 4 && map4) setTimeout(() => map4.invalidateSize(), 60);
+}
+document.querySelectorAll('.tab').forEach(t => t.onclick = () => showScene(+t.dataset.sc));
+document.addEventListener('keydown', e => {
+  if(e.key === 'ArrowRight') showScene(Math.min(4, curScene + 1));
+  if(e.key === 'ArrowLeft')  showScene(Math.max(1, curScene - 1));
+  if(e.key === ' '){ e.preventDefault(); playScene(curScene); }
+});
+
+/* ==================== 打字机 ==================== */
+function colorize(text){
+  let h = text.replace(/&/g,'&amp;').replace(/</g,'&lt;');
+  if(/^\s*(\/\/|\/\*|\*)/.test(text)) return '<span class="tk-c">' + h + '</span>';
+  h = h.replace(/('[^']*'|"[^"]*"|`[^`]*`)/g, '<span class="tk-s">$1</span>');
+  h = h.replace(/\b(const|let|await|async|function|return|forEach|new|fetch)\b/g, '<span class="tk-k">$1</span>');
+  h = h.replace(/\b(\d+\.?\d*)\b/g, '<span class="tk-n">$1</span>');
+  h = h.replace(/\b([a-zA-Z_$][\w$]*)(?=\()/g, '<span class="tk-f">$1</span>');
+  return h;
+}
+async function typeCode(el, lines, speed){
+  el.innerHTML = '';
+  const cur = document.createElement('span'); cur.className = 'cursor';
+  for(const line of lines){
+    const div = document.createElement('div');
+    el.appendChild(div); el.appendChild(cur);
+    for(let i = 0; i <= line.length; i++){
+      div.textContent = line.slice(0, i);
+      el.insertBefore(cur, null);
+      await new Promise(r => setTimeout(r, speed));
+    }
+    div.innerHTML = colorize(line);
+  }
+  cur.remove();
+}
+function showCode(el, lines){
+  el.innerHTML = '';
+  lines.forEach(line => {
+    const div = document.createElement('div');
+    div.innerHTML = colorize(line) || '&nbsp;';
+    el.appendChild(div);
+  });
+}
+async function clog(el, html, wait){
+  const div = document.createElement('div'); div.innerHTML = html;
+  el.appendChild(div);
+  await new Promise(r => setTimeout(r, wait || 350));
+}
+
+/* ==================== 场景1：实地勘探 ==================== */
+const SURVEY_ROWS = POINTS.filter((p,i) => i % 3 === 0).slice(0, 12);
+async function playSurvey(){
+  const tb = document.getElementById('survey-tbody');
+  const cnt = document.getElementById('survey-count');
+  const msg = document.getElementById('survey-msg');
+  const btn = document.getElementById('survey-run');
+  tb.innerHTML = ''; msg.style.opacity = 0; btn.disabled = true;
+  let n = 0;
+  for(const p of SURVEY_ROWS){
+    const tr = document.createElement('tr'); tr.className = 'row-in';
+    tr.innerHTML = `<td>${p.n}</td><td class="lv-tag" style="color:${LV_COLOR[p.l]}">${p.l}</td><td>${p.o.toFixed(6)}</td><td>${p.a.toFixed(6)}</td>`;
+    tb.appendChild(tr);
+    n += 3; cnt.textContent = Math.min(n, 36);
+    await new Promise(r => setTimeout(r, 260));
+  }
+  cnt.textContent = 36;
+  msg.style.opacity = 1;
+  btn.disabled = false;
+}
+document.getElementById('survey-run').onclick = playSurvey;
+
+/* ==================== 场景2：坐标纠偏 ==================== */
+const CODE2 = [
+  '// 手机GPS给出的是 WGS-84 坐标',
+  '// 国内地图使用 GCJ-02（火星坐标系）',
+  'function wgs2gcj(lon, lat) {',
+  '  let dLat = tLat(lon - 105, lat - 35);',
+  '  let dLon = tLon(lon - 105, lat - 35);',
+  '  const radLat = lat / 180 * PI;',
+  '  // 椭球面修正 + 偏移量叠加',
+  '  dLat = (dLat * 180) / ((AXIS * (1-ECC)) / magic * PI);',
+  '  dLon = (dLon * 180) / (AXIS / sq * cos(radLat) * PI);',
+  '  return [lon + dLon, lat + dLat];',
+  '}',
+];
+async function playCoord(){
+  const b = document.getElementById('coord-before');
+  const a = document.getElementById('coord-after');
+  const ok = document.getElementById('coord-ok');
+  b.textContent = ''; a.textContent = ''; ok.style.opacity = 0;
+  await typeCode(document.getElementById('code2'), CODE2, 14);
+  await new Promise(r => setTimeout(r, 300));
+  const before = 'E 111.657306 , N 32.375842';
+  const after  = 'E 111.660957 , N 32.376996';
+  for(let i = 0; i <= before.length; i++){ b.textContent = before.slice(0,i); await new Promise(r=>setTimeout(r,28)); }
+  await new Promise(r => setTimeout(r, 420));
+  for(let i = 0; i <= after.length; i++){ a.textContent = after.slice(0,i); await new Promise(r=>setTimeout(r,28)); }
+  ok.style.opacity = 1;
+}
+
+/* ==================== 场景3：点位录入·运行 ==================== */
+const SKELETON = [
+  '// points-loader.js —— 点位数据加载器',
+  'const dataset = loadDataset();  // 载入点位数据集',
+  'dataset.forEach(renderPoint);   // 批量渲染全部点位',
+  '',
+  '// ▼ 将左侧「点位数据卡」拖入此区域',
+  '//   自动生成点位代码并运行 ▼',
+];
+let map3 = null, layerByKey = {}, stationLayers = [], legendCtl = null, running3 = false;
+let DOCK_CARDS = {}, dockN = 0;
+
+function initMap3(){
+  map3 = L.map('map3', { zoomControl:false, minZoom:12, maxZoom:18, attributionControl:false });
+  L.layerGroup([
+    L.tileLayer(TILES, { subdomains:['1','2','3','4'], maxZoom:18 }),
+    L.tileLayer(TILES_LABEL, { subdomains:['1','2','3','4'], maxZoom:18 })
+  ]).addTo(map3);
+  const all = POINTS.map(p => [p.a, p.o]).concat(STATIONS.map(s => [s.lat, s.lon]));
+  map3.fitBounds(L.latLngBounds(all).pad(0.3));
+}
+function pulseIcon(color, icon){
+  return L.divIcon({ className:'pulse-wrap',
+    html:`<div class="pulse drop-in" style="--c:${color}">${icon}</div>`,
+    iconSize:[26,26], iconAnchor:[13,13] });
+}
+function renderPoint(d, key){
+  const color = LV_COLOR[d.level] || '#DC2626';
+  const c = L.circle([d.lat, d.lon], { radius:LV_R[d.level]||80, color, weight:2, opacity:.8,
+    fillColor:color, fillOpacity:.16, className:'zone-circle' }).addTo(map3);
+  const m = L.marker([d.lat, d.lon], { icon:pulseIcon(color, LV_ICON[d.level]||'!') }).addTo(map3);
+  attachPull(m, d, key);
+  layerByKey[key] = [c, m];
+}
+function removeLayers(key){
+  (layerByKey[key] || []).forEach(l => map3.removeLayer(l));
+  delete layerByKey[key];
+}
+function updateBadge(){
+  document.getElementById('badge3-n').textContent = Object.keys(layerByKey).length;
+}
+function addLegend(){
+  legendCtl = L.control({ position:'bottomright' });
+  legendCtl.onAdd = () => {
+    const d = L.DomUtil.create('div', 'legend-d');
+    const seen = {}; let h = '';
+    ['高危区','警戒区','救援点'].forEach(t => {
+      if(POINTS.some(p => (LV_TIER[p.l]||'警戒区') === t)) h += `<div><span class="dot" style="background:${TIER_COLOR[t]}"></span>${t}</div>`;
+    });
+    STATIONS.forEach(st => h += `<div><span class="dot" style="background:${st.color}"></span>${st.name}</div>`);
+    d.innerHTML = h; return d;
+  };
+  legendCtl.addTo(map3);
+}
+/* 启动：骨架代码 + 全量渲染 */
+async function bootScene3(){
+  const con = document.getElementById('console3');
+  const badge = document.getElementById('badge3');
+  con.innerHTML = ''; badge.style.display = 'block';
+  await typeCode(document.getElementById('code3'), SKELETON, 12);
+  await clog(con, '<span class="c-run">▶ 系统启动 · 载入点位数据集</span>', 400);
+  for(let i = 0; i < POINTS.length; i++){
+    const p = POINTS[i];
+    renderPoint({ name:p.n, level:p.l, lon:p.o, lat:p.a, desc:'实地勘探实测点位' }, 'p' + i);
+    updateBadge();
+    await new Promise(r => setTimeout(r, 55));
+  }
+  STATIONS.forEach(st => {
+    stationLayers.push(L.marker([st.lat, st.lon], { icon:pulseIcon(st.color, st.icon) }).addTo(map3));
+  });
+  addLegend();
+  await clog(con, '<span class="c-ok">✔ 36 个点位渲染完成</span> <span class="c-info">· 蓝天救援队 · 水上急救站 已叠加</span>', 200);
+}
+/* 代码模板 */
+function buildAddCode(d){
+  return [
+    `// ═══ 新点位录入 · ${d.name} ═══`,
+    'const newPoint = {',
+    `  name:  '${d.name}',`,
+    `  level: '${d.level}',   // 危险类型`,
+    `  lon: ${d.lon.toFixed(6)},   // 经度`,
+    `  lat: ${d.lat.toFixed(6)},   // 纬度`,
+    `  info: '${d.desc}',`,
+    '};',
+    'validate(newPoint);      // 数据校验',
+    'dataset.push(newPoint);  // 写入数据集',
+    'renderPoint(newPoint);   // 渲染到地图',
+  ];
+}
+function buildUpdCode(d){
+  return [
+    `// ═══ 点位信息更新 · ${d.name} ═══`,
+    `const pt = getPoint('${d.key}');  // 取出原点位`,
+    `pt.name  = '${d.name}';`,
+    `pt.level = '${d.level}';   // 危险类型`,
+    `pt.lon   = ${d.lon.toFixed(6)};`,
+    `pt.lat   = ${d.lat.toFixed(6)};`,
+    `pt.info  = '${d.desc}';`,
+    'updatePoint(pt);   // 覆盖旧数据',
+    'refreshPoint(pt);  // 地图重绘',
+  ];
+}
+/* 拖卡 → 生成代码 → 运行 */
+async function addSeq(d, key){
+  if(running3) return; running3 = true;
+  const con = document.getElementById('console3');
+  await typeCode(document.getElementById('code3'), buildAddCode(d), 11);
+  await clog(con, '<span class="c-run">▶ 运行 points-loader.js</span>', 420);
+  await clog(con, `<span class="c-ok">✔ 数据校验通过</span> <span class="c-info">—— 类型:${d.level} · 坐标有效</span>`, 300);
+  removeLayers(key);
+  map3.flyTo([d.lat, d.lon], 15, { duration:.9 });
+  await new Promise(r => setTimeout(r, 950));
+  renderPoint(d, key);
+  updateBadge();
+  await clog(con, `<span class="c-ok">✔ 写入数据集并渲染完成</span> <span class="c-key">${d.name}</span>`, 200);
+  running3 = false;
+}
+async function updSeq(d){
+  if(running3) return; running3 = true;
+  const con = document.getElementById('console3');
+  await typeCode(document.getElementById('code3'), buildUpdCode(d), 11);
+  await clog(con, '<span class="c-run">▶ 运行 points-loader.js</span>', 420);
+  await clog(con, `<span class="c-info">… 定位原点位 ${d.key} · 移除旧标记</span>`, 350);
+  removeLayers(d.key);
+  map3.flyTo([d.lat, d.lon], 15, { duration:.9 });
+  await new Promise(r => setTimeout(r, 950));
+  renderPoint(d, d.key);
+  updateBadge();
+  await clog(con, `<span class="c-ok">✔ 点位信息已更新并重绘</span> <span class="c-key">${d.name}</span>`, 200);
+  running3 = false;
+}
+/* 数据卡拖拽 */
+document.querySelectorAll('.pt-card[data-card]').forEach(el => {
+  el.addEventListener('dragstart', e => {
+    e.dataTransfer.setData('text/plain', el.dataset.card);
+    e.dataTransfer.effectAllowed = 'copy';
+  });
+});
+const editor3 = document.getElementById('editor3');
+editor3.addEventListener('dragover', e => { e.preventDefault(); editor3.classList.add('drop-hi'); });
+editor3.addEventListener('dragleave', () => editor3.classList.remove('drop-hi'));
+editor3.addEventListener('drop', e => {
+  e.preventDefault(); editor3.classList.remove('drop-hi');
+  const id = e.dataTransfer.getData('text/plain');
+  if(DOCK_CARDS[id]) updSeq(DOCK_CARDS[id]);
+  else if(CARD_DATA[id]) addSeq(CARD_DATA[id], 'card-' + id);
+});
+/* 从地图拖出点位 → 修改浮层 */
+function cardHtml(d){
+  const color = LV_COLOR[d.level] || '#DC2626';
+  return `<div class="pt-card" style="--c:${color}">
+    <div class="nm">${d.name}</div>
+    <span class="tg">${d.level}</span>
+    <div class="co">E ${(+d.lon).toFixed(6)}<br/>N ${(+d.lat).toFixed(6)}</div>
+  </div>`;
+}
+function attachPull(marker, d, key){
+  marker.on('mousedown', ev => {
+    const oe = ev.originalEvent; oe.preventDefault();
+    map3.dragging.disable();
+    const ghost = document.getElementById('ghost');
+    ghost.innerHTML = cardHtml(d);
+    ghost.style.display = 'block';
+    const mv = e2 => { ghost.style.left = e2.clientX + 'px'; ghost.style.top = e2.clientY + 'px'; };
+    mv(oe);
+    const up = () => {
+      document.removeEventListener('mousemove', mv);
+      document.removeEventListener('mouseup', up);
+      ghost.style.display = 'none';
+      map3.dragging.enable();
+      openEdit(d, key);
+    };
+    document.addEventListener('mousemove', mv);
+    document.addEventListener('mouseup', up);
+  });
+}
+let editCtx = null;
+function openEdit(d, key){
+  editCtx = { d, key };
+  document.getElementById('ec-name').value = d.name;
+  document.getElementById('ec-level').value = d.level;
+  document.getElementById('ec-lon').value = (+d.lon).toFixed(6);
+  document.getElementById('ec-lat').value = (+d.lat).toFixed(6);
+  document.getElementById('ec-desc').value = d.desc || '';
+  document.getElementById('edit-mask').style.display = 'flex';
+}
+document.getElementById('ec-cancel').onclick = () => {
+  document.getElementById('edit-mask').style.display = 'none';
+};
+document.getElementById('ec-pack').onclick = () => {
+  const { key } = editCtx;
+  const d = {
+    key,
+    name:  document.getElementById('ec-name').value.trim() || '未命名点位',
+    level: document.getElementById('ec-level').value,
+    lon:   parseFloat(document.getElementById('ec-lon').value) || 0,
+    lat:   parseFloat(document.getElementById('ec-lat').value) || 0,
+    desc:  document.getElementById('ec-desc').value.trim() || '——'
+  };
+  const id = 'dock' + (++dockN);
+  DOCK_CARDS[id] = d;
+  const el = document.createElement('div');
+  el.className = 'pt-card dock-in';
+  el.draggable = true;
+  el.dataset.card = id;
+  el.style.setProperty('--c', LV_COLOR[d.level] || '#DC2626');
+  el.innerHTML = `<div class="nm">✏️ ${d.name}</div>
+    <span class="tg">${d.level} · 已修改</span>
+    <div class="co">E ${d.lon.toFixed(6)}<br/>N ${d.lat.toFixed(6)}</div>
+    <div class="ds">${d.desc}</div>`;
+  el.addEventListener('dragstart', e => {
+    e.dataTransfer.setData('text/plain', id);
+    e.dataTransfer.effectAllowed = 'copy';
+  });
+  document.getElementById('card-dock').appendChild(el);
+  document.getElementById('edit-mask').style.display = 'none';
+};
+/* 重置（供多次拍摄） */
+function resetScene3(){
+  Object.keys(layerByKey).forEach(removeLayers);
+  stationLayers.forEach(l => map3.removeLayer(l)); stationLayers = [];
+  if(legendCtl){ map3.removeControl(legendCtl); legendCtl = null; }
+  DOCK_CARDS = {}; document.getElementById('card-dock').innerHTML = '';
+  document.getElementById('console3').innerHTML = '';
+  showCode(document.getElementById('code3'), SKELETON);
+  POINTS.forEach((p, i) => renderPoint({ name:p.n, level:p.l, lon:p.o, lat:p.a, desc:'实地勘探实测点位' }, 'p' + i));
+  STATIONS.forEach(st => stationLayers.push(L.marker([st.lat, st.lon], { icon:pulseIcon(st.color, st.icon) }).addTo(map3)));
+  addLegend(); updateBadge();
+  const con = document.getElementById('console3');
+  clog(con, '<span class="c-run">▶ 系统启动 · 载入点位数据集</span>', 0);
+  clog(con, '<span class="c-ok">✔ 36 个点位渲染完成</span> <span class="c-info">· 蓝天救援队 · 水上急救站 已叠加</span>', 0);
+}
+document.getElementById('reset3').onclick = resetScene3;
+
+/* ==================== 场景4：云端发布·同步 ==================== */
+let map4 = null;
+const CODE4 = [
+  '{',
+  '  "bar": "⚠ 点位为实地勘探实测，信息持续核实更新中",',
+  '  "points": [',
+  '    { "id": "01", "name": "救生设施投放点 01",',
+  '      "level": "救生点",',
+  '      "lon": 111.662394, "lat": 32.380152 },',
+  '    { "id": "14", "name": "陡坡危险点 14",',
+  '      "level": "陡坡深水",',
+  '      "lon": 111.675616, "lat": 32.405770 },',
+  '    … 共 36 个点位 …',
+  '  ],',
+  '  "stations": [ 蓝天救援队, 水上急救站 ]',
+  '}',
+];
+function initMap4(){
+  map4 = L.map('phone-map', { zoomControl:false, minZoom:12, maxZoom:18,
+    attributionControl:false, dragging:false, scrollWheelZoom:false, doubleClickZoom:false });
+  L.layerGroup([
+    L.tileLayer(TILES, { subdomains:['1','2','3','4'], maxZoom:18 }),
+    L.tileLayer(TILES_LABEL, { subdomains:['1','2','3','4'], maxZoom:18 })
+  ]).addTo(map4);
+  POINTS.forEach(p => L.circleMarker([p.a, p.o], { radius:5, color:'#fff', weight:1.5,
+    fillColor:LV_COLOR[p.l]||'#DC2626', fillOpacity:.95 }).addTo(map4));
+  STATIONS.forEach(st => L.circleMarker([st.lat, st.lon], { radius:6, color:'#fff',
+    weight:1.5, fillColor:st.color, fillOpacity:1 }).addTo(map4));
+  const all = POINTS.map(p => [p.a, p.o]);
+  map4.fitBounds(L.latLngBounds(all).pad(0.25));
+  const qr = qrcode(0, 'M');
+  qr.addData('https://2598027012.github.io/hanjiang-map-data/index.html'); qr.make();
+  const n = qr.getModuleCount(), cell = 4, margin = 3, size = (n + margin*2) * cell;
+  const cv = document.createElement('canvas'); cv.width = cv.height = size;
+  const ctx = cv.getContext('2d');
+  ctx.fillStyle = '#fff'; ctx.fillRect(0,0,size,size); ctx.fillStyle = '#111827';
+  for(let r = 0; r < n; r++) for(let c = 0; c < n; c++)
+    if(qr.isDark(r,c)) ctx.fillRect((c+margin)*cell, (r+margin)*cell, cell, cell);
+  document.getElementById('qr-mini').appendChild(cv);
+}
+async function playRun4(){
+  const btn = document.getElementById('run4');
+  const con = document.getElementById('console4');
+  btn.disabled = true; con.innerHTML = '';
+  await typeCode(document.getElementById('code4'), CODE4, 11);
+  await clog(con, '<span class="c-info">$ 后台修改完成，正在发布…</span>', 500);
+  await clog(con, '<span class="c-key">PUT</span> <span class="c-info">/repos/2598027012/hanjiang-map-data/contents/data.json</span>', 600);
+  await clog(con, '<span class="c-ok">200 OK</span> <span class="c-info">· 耗时 0.8s · CDN 缓存已刷新</span>', 400);
+  await clog(con, '<span class="c-run">✅ 发布成功 —— 二维码无需更换</span>', 500);
+  const pm = document.getElementById('phone-map');
+  pm.classList.remove('flash'); void pm.offsetWidth; pm.classList.add('flash');
+  const toast = document.getElementById('phone-toast');
+  toast.style.display = 'block';
+  setTimeout(() => toast.style.display = 'none', 2600);
+  btn.disabled = false;
+}
+document.getElementById('run4').onclick = playRun4;
+
+/* ==================== 屏蔽平台角标 ==================== */
+function removeKimiBadge(){
+  document.querySelectorAll('[id*="kimi" i],[class*="kimi" i],iframe[src*="kimi" i]').forEach(e => e.remove());
+  document.querySelectorAll('body > div, body > a, body > iframe').forEach(el => {
+    if(el.id === 'ghost' || el.id === 'edit-mask' || el.id === 'topbar') return;
+    const cs = getComputedStyle(el);
+    if(cs.position === 'fixed' && /kimi|agent/i.test(el.textContent || '')) el.remove();
+  });
+}
+setInterval(removeKimiBadge, 400); removeKimiBadge();
+
+/* ==================== 初始化 ==================== */
+function initScene(n){
+  if(n === 3){ initMap3(); bootScene3(); }
+  if(n === 4){ initMap4(); }
+  if(n === 1){ playSurvey(); }
+  if(n === 2){ playCoord(); }
+}
+function playScene(n){
+  if(n === 1) playSurvey();
+  if(n === 2) playCoord();
+  if(n === 3) resetScene3();
+  if(n === 4) playRun4();
+}
+showScene(1);
+</script>
+</body>
+</html>
