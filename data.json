@@ -773,11 +773,11 @@
   "levels": [
     {
       "name": "水下暗礁",
-      "color": "#dc2626"
+      "color": "#EAB308"
     },
     {
       "name": "浅滩碎石",
-      "color": "#dc2626"
+      "color": "#EAB308"
     }
   ],
   "stations": [
