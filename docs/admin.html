@@ -3,13 +3,13 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
 <title>点位后台管理 · 汉江老河口段防溺水警示图</title>
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%231E293B'/%3E%3Ctext x='32' y='45' font-size='38' text-anchor='middle' fill='white' font-family='sans-serif' font-weight='bold'%3E管%3C/text%3E%3C/svg%3E"/>
-<link rel="manifest" href="https://cdn.jsdelivr.net/gh/2598027012/hanjiang-map-data@main/icons/manifest-admin.json"/>
+<link rel="manifest" href="https://cdn.jsdelivr.net/gh/hanjiangmap/map@main/icons/manifest-admin.json"/>
 <!-- 多尺寸 PNG 图标：安卓各品牌自带浏览器创建桌面快捷方式时取用 -->
-<link rel="icon" type="image/png" sizes="192x192" href="https://cdn.jsdelivr.net/gh/2598027012/hanjiang-map-data@main/icons/admin-192.png"/>
-<link rel="icon" type="image/png" sizes="512x512" href="https://cdn.jsdelivr.net/gh/2598027012/hanjiang-map-data@main/icons/admin-512.png"/>
-<link rel="shortcut icon" href="https://cdn.jsdelivr.net/gh/2598027012/hanjiang-map-data@main/icons/admin-192.png"/>
-<link rel="apple-touch-icon" href="https://cdn.jsdelivr.net/gh/2598027012/hanjiang-map-data@main/icons/admin-180.png"/>
-<link rel="apple-touch-icon" sizes="180x180" href="https://cdn.jsdelivr.net/gh/2598027012/hanjiang-map-data@main/icons/admin-180.png"/>
+<link rel="icon" type="image/png" sizes="192x192" href="https://cdn.jsdelivr.net/gh/hanjiangmap/map@main/icons/admin-192.png"/>
+<link rel="icon" type="image/png" sizes="512x512" href="https://cdn.jsdelivr.net/gh/hanjiangmap/map@main/icons/admin-512.png"/>
+<link rel="shortcut icon" href="https://cdn.jsdelivr.net/gh/hanjiangmap/map@main/icons/admin-192.png"/>
+<link rel="apple-touch-icon" href="https://cdn.jsdelivr.net/gh/hanjiangmap/map@main/icons/admin-180.png"/>
+<link rel="apple-touch-icon" sizes="180x180" href="https://cdn.jsdelivr.net/gh/hanjiangmap/map@main/icons/admin-180.png"/>
 <meta name="theme-color" content="#1E293B"/>
 <meta name="mobile-web-app-capable" content="yes"/>
 <meta name="application-name" content="地图后台"/>
@@ -148,7 +148,7 @@
     <h2>线上数据发布配置（首次使用填写一次，仅保存在本浏览器）</h2>
     <div class="form-grid">
       <div><label>GitHub 用户名</label><input id="gh-owner" placeholder="如 zhangsan"/></div>
-      <div><label>数据仓库名</label><input id="gh-repo" placeholder="如 hanjiang-map-data"/></div>
+      <div><label>数据仓库名</label><input id="gh-repo" placeholder="如 map"/></div>
       <div><label>分支</label><input id="gh-branch" placeholder="main"/></div>
       <div><label>访问令牌 Token</label><input id="gh-token" type="password" placeholder="github_pat_..."/></div>
     </div>
@@ -299,7 +299,7 @@ const DEFAULT_PASS_HASH = '6bf9cc4b5d825b798b8ba9a5b52eed30a4c39bfb3f34a49f00f6c
 // 默认维护密码 wh20260805 的 SHA-256（仅实践队掌握；线上 admin.maintHash 可覆盖）
 const DEFAULT_MAINT_HASH = 'fdc6e773bc4b9ecc580d4cce8e900619bd6bcedf50182e4518b0adf4818b177a';
 // 线上数据仓库位置（与 index.html 的 REMOTE 一致；只读无需令牌）
-const REMOTE_CFG = { owner:'2598027012', repo:'hanjiang-map-data', branch:'main', path:'data.json' };
+const REMOTE_CFG = { owner:'hanjiangmap', repo:'map', branch:'main', path:'data.json' };
 async function sha256(s){
   const b = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(s));
   return [...new Uint8Array(b)].map(x => x.toString(16).padStart(2,'0')).join('');
@@ -1119,7 +1119,7 @@ const MAINT_PROMPT =
 - index.html：公众地图。Leaflet 1.9.4 + 高德瓦片（GCJ-02坐标），点位晕染圈+脉冲标记+弹窗，浏览器定位（WGS84转GCJ-02纠偏）后显示到最近救生点的虚线和高德导航。
 - admin.html：点位后台。口令登录（SHA-256校验，校验值存在 data.json 的 admin.passHash 字段，后台可改口令），点位增删改、自定义分类（名称+颜色）、小地图点选坐标、数据导入导出、固定/预览二维码生成（qrcode-generator库）。
 
-【数据流】点位数据托管在 GitHub 仓库 2598027012/hanjiang-map-data 的 data.json（公开仓库）。
+【数据流】点位数据托管在 GitHub 仓库 hanjiangmap/map 的 data.json（公开仓库）。
 - 读：index.html 打开时 fetch 远程数据（api.github.com 实时通道 → jsDelivr CDN 备用通道 → 内置数据兜底），也支持网址 #cfg=Base64补丁 预览。
 - 写：admin.html 用 GitHub Contents API（Bearer Token）PUT 更新 data.json，发布后群众扫码即见，二维码固定不变。
 
