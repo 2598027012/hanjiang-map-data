@@ -747,7 +747,7 @@ function initMap4(){
   const all = POINTS.map(p => [p.a, p.o]);
   map4.fitBounds(L.latLngBounds(all).pad(0.25));
   const qr = qrcode(0, 'M');
-  qr.addData('https://2598027012.github.io/hanjiang-map-data/index.html'); qr.make();
+  qr.addData('https://afqkpzm3aytdw.ok.kimi.link/index.html'); qr.make();
   const n = qr.getModuleCount(), cell = 4, margin = 3, size = (n + margin*2) * cell;
   const cv = document.createElement('canvas'); cv.width = cv.height = size;
   const ctx = cv.getContext('2d');
@@ -762,7 +762,7 @@ async function playRun4(){
   btn.disabled = true; con.innerHTML = '';
   await typeCode(document.getElementById('code4'), CODE4, 11);
   await clog(con, '<span class="c-info">$ 后台修改完成，正在发布…</span>', 500);
-  await clog(con, '<span class="c-key">PUT</span> <span class="c-info">/repos/2598027012/hanjiang-map-data/contents/data.json</span>', 600);
+  await clog(con, '<span class="c-key">PUT</span> <span class="c-info">/repos/hanjiangmap/map/contents/data.json</span>', 600);
   await clog(con, '<span class="c-ok">200 OK</span> <span class="c-info">· 耗时 0.8s · CDN 缓存已刷新</span>', 400);
   await clog(con, '<span class="c-run">✅ 发布成功 —— 二维码无需更换</span>', 500);
   const pm = document.getElementById('phone-map');
