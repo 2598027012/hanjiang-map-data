@@ -491,7 +491,7 @@ const BASE_POINTS = [
     {"id": "32", "name": "陡坡危险点：水深危险！", "level": "陡坡深水", "lon": 111.661178, "lat": 32.378087, "info": [["点位编号", "32"], ["风险类型", "岸坡陡峭、入水即深水、坡面湿滑易坠跌"]], "warn": "严禁下水游泳、戏水、垂钓，请勿靠近岸边湿滑区域"}
   ];
 const BASE_IDS = new Set(BASE_POINTS.map(p => p.id));
-const DEFAULT_BAR = "⚠ 点位为实地勘探实测，信息持续核实更新中";
+const DEFAULT_BAR = "⚠ 点位为实地勘探实测，信息持续更新中";
 
 /* ============ 补丁状态：removed（删）+ modified（改）+ added（增）+ customLevels（自定义分类） ============ */
 let removed = new Set();
@@ -503,7 +503,7 @@ let customLevels = [];   // [{name, color}]，随补丁下发，公众地图自�
 /* 救援站点（与 index.html 的 BUILTIN_STATIONS 一致；修改需维护密码，随发布写入 data.json） */
 const BASE_STATIONS = [
   { name:"蓝天救援队", lon:111.660957, lat:32.376996, color:"#2563EB", icon:"救",
-    contact:"陈森", phone:"13995780307", note:"" },
+    contact:"贾非", phone:"13972271235", note:"" },
   { name:"水上急救站", lon:111.660962, lat:32.377628, color:"#E11D48", icon:"✚",
     contact:"", phone:"", note:"" }
 ];
@@ -1028,13 +1028,20 @@ async function publishOnline(){
   const api = `https://api.github.com/repos/${c.owner}/${c.repo}/contents/${GH_PATH}`;
   try{
     // 取当前文件 sha，并保留其中的 admin（口令等）字段，避免发布时覆盖
+    // （加随机参数+no-store 防缓存层返回异常响应；拿不到 sha 必须中止，否则 PUT 会报 422）
     let sha, existingAdmin;
-    const r0 = await fetch(`${api}?ref=${c.branch}`, { headers: ghHeaders(c.token) });
-    if(r0.ok){
-      const j0 = await r0.json();
-      sha = j0.sha;
-      try{ existingAdmin = JSON.parse(decodeURIComponent(escape(atob(j0.content.replace(/\n/g,''))))).admin; }catch(e){}
+    const r0 = await fetch(`${api}?ref=${c.branch}&_=${Date.now()}`, { headers: ghHeaders(c.token), cache:'no-store' });
+    if(!r0.ok){
+      alert('发布中止：读取线上文件信息失败（' + r0.status + '）。\n请检查 Token 是否有效、网络是否正常，然后重试。数据未做任何改动。');
+      return;
     }
+    const j0 = await r0.json();
+    sha = j0.sha;
+    if(!sha){
+      alert('发布中止：未获取到线上文件版本号（缓存或网络异常）。\n数据未做任何改动，请稍候重试发布。');
+      return;
+    }
+    try{ existingAdmin = JSON.parse(decodeURIComponent(escape(atob(j0.content.replace(/\n/g,''))))).admin; }catch(e){}
     if(existingAdmin) data.admin = existingAdmin;
     const content = btoa(unescape(encodeURIComponent(JSON.stringify(data, null, 2))));
     const body = { message:'更新防溺水点位数据 ' + new Date().toLocaleString(), content, branch:c.branch };
@@ -1068,9 +1075,10 @@ async function changePass(){
   if(p1 !== p2){ alert('两次输入不一致，已取消'); return; }
   try{
     const api = `https://api.github.com/repos/${c.owner}/${c.repo}/contents/${GH_PATH}`;
-    const r0 = await fetch(`${api}?ref=${c.branch}`, { headers: ghHeaders(c.token) });
+    const r0 = await fetch(`${api}?ref=${c.branch}&_=${Date.now()}`, { headers: ghHeaders(c.token), cache:'no-store' });
     if(!r0.ok){ alert('读取线上数据失败（' + r0.status + '）'); return; }
     const j0 = await r0.json();
+    if(!j0.sha || !j0.content){ alert('读取线上数据异常（未获取到文件内容，可能是缓存或网络问题），请重试'); return; }
     const cur = JSON.parse(decodeURIComponent(escape(atob(j0.content.replace(/\n/g,'')))));
     cur.admin = Object.assign({}, cur.admin, { passHash: await sha256(p1) });
     const content = btoa(unescape(encodeURIComponent(JSON.stringify(cur, null, 2))));
@@ -1097,9 +1105,10 @@ async function changeMaintPass(){
   if(p1 !== p2){ alert('两次输入不一致，已取消'); return; }
   try{
     const api = `https://api.github.com/repos/${c.owner}/${c.repo}/contents/${GH_PATH}`;
-    const r0 = await fetch(`${api}?ref=${c.branch}`, { headers: ghHeaders(c.token) });
+    const r0 = await fetch(`${api}?ref=${c.branch}&_=${Date.now()}`, { headers: ghHeaders(c.token), cache:'no-store' });
     if(!r0.ok){ alert('读取线上数据失败（' + r0.status + '）'); return; }
     const j0 = await r0.json();
+    if(!j0.sha || !j0.content){ alert('读取线上数据异常（未获取到文件内容，可能是缓存或网络问题），请重试'); return; }
     const cur = JSON.parse(decodeURIComponent(escape(atob(j0.content.replace(/\n/g,'')))));
     cur.admin = Object.assign({}, cur.admin, { maintHash: await sha256(p1) });
     const content = btoa(unescape(encodeURIComponent(JSON.stringify(cur, null, 2))));
@@ -1121,10 +1130,10 @@ const MAINT_PROMPT =
 
 【数据流】点位数据托管在 GitHub 仓库 hanjiangmap/map 的 data.json（公开仓库）。
 - 读：index.html 打开时 fetch 远程数据（api.github.com 实时通道 → jsDelivr CDN 备用通道 → 内置数据兜底），也支持网址 #cfg=Base64补丁 预览。
-- 写：admin.html 用 GitHub Contents API（Bearer Token）PUT 更新 data.json，发布后群众扫码即见，二维码固定不变。
+- 写：admin.html 用 GitHub Contents API（Bearer Token）PUT 更新 data.json（先读取线上文件拿到 sha 并保留 admin 字段，再整体写入），发布后群众扫码即见，二维码固定不变。
 
-【数据格式】data.json = { bar:顶部提示条, points:[{id,name,level,lon,lat,info:[[键,值]...],warn}], levels:[{name,color}]（自定义分类，可空）, admin:{passHash} }。
-内置分类：高危水域/中危水域/低危水域/救生点/陡坡深水/水文风险；蓝天救援队与水上急救站写死在 index.html 的 STATIONS。
+【数据格式】data.json = { bar:顶部提示条, points:[{id,name,level,lon,lat,info:[[键,值]...],warn}], levels:[{name,color}]（自定义分类，可空）, stations:[{name,lon,lat,color,icon,contact,phone,note}]（救援站点，可空）, admin:{passHash, maintHash?} }。
+内置分类：高危水域/中危水域/低危水域/救生点/陡坡深水/水文风险；蓝天救援队与水上急救站为救援站点，存 data.json 的 stations 字段（后台「救援站点管理 🔒」修改，需维护密码），该字段缺失时 index.html 用内置值兜底。
 
 【我的需求】（请在理解上述架构后，直接给出完整可用的修改方案/代码）：
 `;
